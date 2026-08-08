@@ -1,0 +1,115 @@
+---
+title: Write basic queries
+description: TODO
+lead: TODO
+section: Tutorials
+order: 1
+---
+
+import TutorialConsole from '../../../components/TutorialConsole';
+import TutorialDataLoader from '../../../components/TutorialDataLoader';
+import IslandFallback from '../../../components/astro/IslandFallback.astro';
+import TutorialTask from '../../../components/astro/TutorialTask.astro';
+import { TUTORIAL_DATA_URL } from '../../../lib/tutorialDatabase';
+
+In this tutorial, we will write basic queries to work with metadata and alignments in RhyDB. It is recommended to first read this [short introduction into the query language](/docs/concepts/query-language) but not strictly necessary.
+
+## Loading the data
+
+We will use a small dataset consisting of 1000 SARS-CoV-2 sequences. We will use the WebAssembly version of RhyDB and run everything within your browser. Click on the following button to index and load the sequences into the browser. You can also download the data file <a href={TUTORIAL_DATA_URL}>here</a> if you would like to inspect it (note: the file is compressed with [Zstadard](https://en.wikipedia.org/wiki/Zstd) and you may need to install a software to decompress it).
+
+<TutorialDataLoader client:only='react'>
+    <IslandFallback slot='fallback' label='Loading RhyDB…' />
+</TutorialDataLoader>
+
+<br />
+
+The dataset has a single table called "default". Let's inspect it:
+
+<TutorialTask>Run `default` to load the whole table</TutorialTask>
+<TutorialTask>Run `default.schema()` to see the schema of the table</TutorialTask>
+
+<TutorialConsole editorHeight={50} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+The table describes where and when each sample was taken: `region`, `country` and `division` hold the sampling location and `date` holds the sampling date. How a sequence was classified is recorded in `pango_lineage`, `nextstrain_clade` and `who_clade`. The sequences themselves are in `unaligned_main`, which holds the nucleotide sequence as submitted, in `main`, which holds the same sequence aligned against the reference genome, and in one field per gene, such as `S`, `ORF1a` and `E`, holding the aligned amino acid sequences.
+
+**Important:** The query language is case-sensitive both in terms of the names of the tables and fields and in terms of the operators.
+
+## Filter and sort metadata
+
+To get familiar with the basic operators of RhyDB, we will first run a few queries on the metadata.
+
+<TutorialTask>Use `project()` to define the columns that should be returned. The operator accepts a set of field names, so a possible query is `default.project({ strain, country, pango_lineage })`.</TutorialTask>
+
+<TutorialTask>Use `filter()` to filter the rows. To get all sequences from Switzerland with a coverage of at least 95%, run `default.filter(country = 'Switzerland' && coverage >= 0.95)`.</TutorialTask>
+
+<TutorialTask>
+    Use `orderBy()` to sort the data and `limit()` to restrict the number of returned rows. Note that `orderBy()`
+    accepts a set of fields as it is possible to sort by multiple fields. By default, the fields are sorted in ascending
+    order; to get a descending order, add `.desc()` to the field name. To get the 20 most recent entries, run
+    `default.orderBy({date.desc()}).limit(20)`.
+</TutorialTask>
+
+<TutorialTask>Combine the operators: get the 10 earliest sequences from Europe outside of Switzerland (hint: the operator for unequal is `<>` and use `.isNotNull()` to filter out missing data) and look at the fields `date`, `country` and `pango_lineage`. From which country is the earliest sequence and which lineage did it have? (Answer: United Kingdom and B.1)</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Grouping and aggregations
+
+Instead of returning individual sequences, `groupBy()` aggregates them. Its first argument is a record of aggregates, currently only `count()`, and its optional second argument is the set of fields to group by.
+
+<TutorialTask>Without grouping fields, the whole table is aggregated into a single row. Run `default.groupBy({ count := count() })` to count the sequences in the table.</TutorialTask>
+
+<TutorialTask>Add a set of grouping fields to get one row per value. Run `default.groupBy({ count := count() }, { region })` to see how the sequences are distributed over the regions.</TutorialTask>
+
+<TutorialTask>Group by several fields and sort the result: `default.groupBy({ count := count() }, { country, pango_lineage }).orderBy({ count.desc() }).limit(5)` returns the five most frequent combinations of country and lineage.</TutorialTask>
+
+<TutorialTask>
+    Combine the operators: which country contributed the most Delta sequences, and how many (hint: filter on `who_clade`
+    first, then group by country)? (Answer: the United Kingdom with 123 sequences)
+</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Filtering and grouping mutations (TODO: refinement needed after the new S[123] syntax has been implemented)
+
+`main` is aligned against the reference genome and the gene fields against the reference proteins, so a position means the same thing in every sequence. `nucleotideEquals(position := n, symbol := s, sequenceName := 'main')` keeps the sequences carrying symbol `s` at the 1-based reference position `n`, and `aminoAcidEquals(position := n, symbol := s, sequenceName := 'S')` does the same within a gene. `hasMutation()` and `hasAAMutation()` take only a position and a sequence name, and keep the sequences that differ from the reference there, whatever the symbol.
+
+<TutorialTask>Count the sequences carrying the S:D614G substitution: `default.filter(aminoAcidEquals(position := 614, symbol := 'G', sequenceName := 'S')).groupBy({ count := count() })`. Nearly the whole dataset carries it.</TutorialTask>
+
+<TutorialTask>The same substitution can be queried on the nucleotide level, where it is A23403G: `default.filter(nucleotideEquals(position := 23403, symbol := 'G', sequenceName := 'main')).groupBy({ count := count() })`. It matches a few more sequences than the amino acid query, because a nucleotide can be called even when the surrounding codon cannot.</TutorialTask>
+
+<TutorialTask>
+    Position 484 of the spike protein carries different substitutions in different clades. Count them together with
+    `hasAAMutation(position := 484, sequenceName := 'S')`, then count only the sequences carrying alanine with
+    `aminoAcidEquals(position := 484, symbol := 'A', sequenceName := 'S')`. (Answer: 532 sequences differ from the
+    reference, 489 of them carry `A`)
+</TutorialTask>
+
+<TutorialTask>Combine mutations with `&&` and group the matches: `default.filter(aminoAcidEquals(position := 501, symbol := 'Y', sequenceName := 'S') && aminoAcidEquals(position := 484, symbol := 'K', sequenceName := 'S')).groupBy({ count := count() }, { who_clade }).orderBy({ count.desc() })`. Which clades combine both substitutions? (Answer: Omicron, Gamma, Mu and Beta, plus a few sequences without a clade assignment)</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+Rather than asking about one symbol at a time, you can also read the symbol itself: `at()` returns the symbol a sequence carries at a reference position, and `map()` turns that expression into a named column. `groupBy()` groups by existing columns only, so map the positions first and then group by them — the result is a co-occurrence table of symbol combinations and how often each occurs. Positions that could not be called appear as `X` in the genes and as `N` in `main`, and deletions appear as `-`.
+
+<TutorialTask>Look at a single position: `default.map({ s501 := S.at(501) }).groupBy({ count := count() }, { s501 }).orderBy({ count.desc() })` returns how many sequences carry each amino acid at position 501 of the spike protein.</TutorialTask>
+
+<TutorialTask>Map a second position to get a co-occurrence table: `default.map({ s501 := S.at(501), s484 := S.at(484) }).groupBy({ count := count() }, { s501, s484 }).orderBy({ count.desc() }).limit(5)`. The most frequent combination is 501Y with 484A.</TutorialTask>
+
+<TutorialTask>
+    Restrict a co-occurrence table to a clade: build one over positions 339 and 371 of `S` for the sequences with
+    `who_clade = 'Omicron'`. Then group the sequences carrying `L` at position 371 by `nextstrain_clade`. Which
+    Nextstrain clades are they? (Answer: 21K only — the earliest Omicron clade; the later ones carry `F`)
+</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>

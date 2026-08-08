@@ -28,6 +28,8 @@ preview port is 5001.
   routes, metadata, ordering, and navigation.
 - Exercise routes are generated from `src/data/exercises.ts`; changing an exercise slug changes the
   generated static route through `getStaticPaths()`.
+- Checked-in static assets live in `public/`. `scripts/prepare-public.mjs` assembles them, together with
+  the optional WASM build, into `.generated-public/`, which is Astro's `publicDir`.
 - `PUBLIC_BASE_PATH` controls sub-path deployments; use `withBase()` for internal links.
 - `PUBLIC_RHYDB_DEFAULT_SERVER` sets the Console's initial server. `PUBLIC_RHYDB_EXERCISE_SERVER` is the
   separate, non-editable exercise target. Both fall back to the GenSpectrum staging RhyDB.
@@ -45,6 +47,17 @@ preview port is 5001.
   `E`.
 - Integer comparisons with `>` / `<` may not be available on all RhyDB columns; prefer supported
   query-language functions such as `between(...)` where appropriate.
+
+## Tutorial Dataset
+
+- `data/sars-cov-2-1000/source.ndjson.zst` is the 1000-sequence dump. `npm run example-data` reduces it
+  to the tutorial columns and writes it, together with the database config, lineage definitions and
+  preprocessing config, into `public/example-data/sars-cov-2-1000/`. The generated files are committed;
+  change the dump or the rules in the script rather than editing them by hand.
+- Tutorial metadata columns are snake_case. Sequence columns keep the segment and gene names that
+  `reference_genomes.json` defines.
+- `src/lib/tutorialDatabase.ts` keeps one browser-local database per tab and shares it across the
+  tutorial islands on a page, so a page can hold several consoles behind a single load step.
 
 ## Exercises
 

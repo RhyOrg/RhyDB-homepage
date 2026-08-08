@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { classifyColumns, sequenceUnit } from '../lib/sequences';
-import { getPaginationItems, getPageWindow } from '../lib/pagination';
+import { getPaginationItems, getPageWindow, RESULTS_PAGE_SIZE } from '../lib/pagination';
 import SequenceViewer from './SequenceViewer';
 import type { QueryRow, QueryValue, SequenceViewerState } from '../lib/types';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
@@ -33,14 +33,14 @@ type DragState = {
 // Renders NDJSON result rows as a fixed-layout table: columns are sized to their header (min 150px),
 // every cell is a single line, and content that doesn't fit is expanded on demand — strings via a
 // more/less toggle, sequences via the viewer.
-export default function ResultsTable({ rows }: { rows: QueryRow[] }) {
+export default function ResultsTable({ rows, pageSize = RESULTS_PAGE_SIZE }: { rows: QueryRow[]; pageSize?: number }) {
     const [viewer, setViewer] = useState<SequenceViewerState | null>(null);
     const [columnWidthState, setColumnWidthState] = useState<ColumnWidthState>({ columnKey: '', widths: {} });
     const [dragState, setDragState] = useState<DragState | null>(null);
     const [pageIndex, setPageIndex] = useState(0);
     const tableRef = useRef<HTMLDivElement>(null);
     const data = rows ?? [];
-    const page = getPageWindow(data.length, pageIndex);
+    const page = getPageWindow(data.length, pageIndex, pageSize);
     const pageRows = useMemo(() => data.slice(page.start, page.end), [data, page.end, page.start]);
     const paginationItems = useMemo(
         () => getPaginationItems(page.pageIndex, page.pageCount),
@@ -121,7 +121,7 @@ export default function ResultsTable({ rows }: { rows: QueryRow[] }) {
         });
 
     const goToPage = (nextPageIndex: number) => {
-        const nextPage = getPageWindow(data.length, nextPageIndex).pageIndex;
+        const nextPage = getPageWindow(data.length, nextPageIndex, pageSize).pageIndex;
         if (nextPage === page.pageIndex) return;
 
         setViewer(null);

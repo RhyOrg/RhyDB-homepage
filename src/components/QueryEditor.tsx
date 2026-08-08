@@ -7,6 +7,9 @@ import { rhydbQueryLanguage } from '../lib/rhydbQueryLanguage';
 import { diagnosticFor } from '../lib/diagnostic';
 import type { ErrorPosition } from '../lib/types';
 
+// Editor heights are given in pixels.
+export const DEFAULT_EDITOR_HEIGHT = 160;
+
 type QueryEditorProps = {
     value: string;
     onChange: (value: string) => void;
@@ -14,7 +17,7 @@ type QueryEditorProps = {
     status?: 'correct' | 'wrong' | 'unknown';
     errorPosition?: ErrorPosition;
     errorMessage?: string;
-    minHeight?: string;
+    minHeight?: number;
 };
 
 // CodeMirror editor for RhyDB's query language. Ctrl/Cmd+Enter runs the query, Ctrl/Cmd+/ toggles comments, and an
@@ -26,7 +29,7 @@ export default function QueryEditor({
     status,
     errorPosition,
     errorMessage,
-    minHeight = '160px',
+    minHeight = DEFAULT_EDITOR_HEIGHT,
 }: QueryEditorProps) {
     const viewRef = useRef<EditorView | null>(null);
 
@@ -75,7 +78,7 @@ export default function QueryEditor({
                     viewRef.current = view;
                 }}
                 extensions={extensions}
-                minHeight={minHeight}
+                minHeight={`${minHeight}px`}
                 basicSetup={{
                     lineNumbers: true,
                     highlightActiveLine: false,

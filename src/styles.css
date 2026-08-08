@@ -519,7 +519,8 @@
     content: '#';
 }
 
-.documentation-page h4::before {
+.documentation-page h4::before,
+.tutorial-task::before {
     margin-right: 0.4rem;
     color: var(--color-accent);
     content: '→';

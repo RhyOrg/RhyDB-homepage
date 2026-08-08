@@ -8,7 +8,7 @@ interface Props {
 }
 
 const { entries, currentPath } = Astro.props;
-const sections = ['Concepts', 'Reference'] as const;
+const sections = ['Concepts', 'Tutorials', 'Reference'] as const;
 const sorted = [...entries].sort((a, b) => a.data.order - b.data.order);
 const navClass = (active: boolean) =>
     `grid h-auto min-h-8 w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] whitespace-normal overflow-hidden${active ? ' bg-primary/12 font-semibold text-primary' : ''}`;

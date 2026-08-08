@@ -44,6 +44,11 @@ type QueryRunnerProps = {
     onQueryChange?: (query: string) => void;
     autoRun?: boolean;
     onAutoRun?: () => void;
+    // Adds `.limit(100)` to queries that set no limit. Turn it off only where the data is small
+    // enough that an unbounded result cannot overwhelm the browser.
+    addDefaultLimit?: boolean;
+    editorHeight?: number;
+    resultsPageSize?: number;
 };
 
 // Lets a parent replace the editor content, as if the user had typed it.
@@ -55,7 +60,17 @@ export type QueryRunnerHandle = {
 // When `referenceQuery` is provided (exercise mode), the user's result is
 // compared against the reference answer and a Correct!/Wrong! verdict is shown.
 function QueryRunner(
-    { target, initialQuery = '', referenceQuery, onQueryChange, autoRun = false, onAutoRun }: QueryRunnerProps,
+    {
+        target,
+        initialQuery = '',
+        referenceQuery,
+        onQueryChange,
+        autoRun = false,
+        onAutoRun,
+        addDefaultLimit = true,
+        editorHeight,
+        resultsPageSize,
+    }: QueryRunnerProps,
     ref: React.Ref<QueryRunnerHandle>,
 ) {
     const [query, setQuery] = useState(initialQuery);
@@ -93,7 +108,7 @@ function QueryRunner(
 
         setRunning(true);
         try {
-            const res = await runBoundedTarget(target, query);
+            const res = addDefaultLimit ? await runBoundedTarget(target, query) : await target.run(query);
             setResult(res);
 
             if (referenceQuery) {
@@ -119,7 +134,7 @@ function QueryRunner(
         } finally {
             setRunning(false);
         }
-    }, [query, referenceQuery, target]);
+    }, [addDefaultLimit, query, referenceQuery, target]);
 
     useEffect(() => {
         if (!autoRun || autoRunStarted.current || !query.trim()) return;
@@ -153,6 +168,7 @@ function QueryRunner(
                 status={verdict?.status}
                 errorPosition={errorMark?.position}
                 errorMessage={errorMark?.message}
+                minHeight={editorHeight}
             />
             <div className='mt-3 flex flex-wrap items-center gap-2'>
                 <button type='button' className='btn btn-primary btn-sm' onClick={run} disabled={running}>
@@ -211,7 +227,7 @@ function QueryRunner(
                         )}
                         {result.dataVersion ? ` · data-version ${result.dataVersion}` : ''}
                     </div>
-                    <ResultsTable rows={result.rows} />
+                    <ResultsTable rows={result.rows} pageSize={resultsPageSize} />
                 </>
             )}
         </div>

@@ -4,7 +4,7 @@ import { withBase } from '../../lib/paths';
 import DocumentationLayout from '../../layouts/DocumentationLayout.astro';
 
 const entries = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
-const sections = ['Concepts', 'Reference'] as const;
+const sections = ['Concepts', 'Tutorials', 'Reference'] as const;
 ---
 
 <DocumentationLayout
@@ -13,7 +13,7 @@ const sections = ['Concepts', 'Reference'] as const;
     currentPath='/docs'
     overview
 >
-    <div class='grid gap-5 md:grid-cols-2'>
+    <div class='grid gap-5 md:grid-cols-3'>
         {
             sections.map((section) => (
                 <section class='card border border-base-300 bg-base-100'>

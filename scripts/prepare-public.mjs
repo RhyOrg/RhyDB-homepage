@@ -1,4 +1,7 @@
-import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
+// Assembles the static asset directory Astro publishes: the checked-in files under public/, plus the
+// separately supplied RhyDB WASM build when local RhyDB is enabled.
+
+import { copyFile, cp, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -14,6 +17,7 @@ const files = [
 
 await rm(generatedRoot, { recursive: true, force: true });
 await mkdir(generatedRoot, { recursive: true });
+await cp(path.join(projectRoot, 'public'), generatedRoot, { recursive: true });
 
 if (!enabled) process.exit(0);
 

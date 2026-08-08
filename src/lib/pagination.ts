@@ -9,16 +9,16 @@ export type PageWindow = {
     end: number;
 };
 
-export function getPageWindow(rowCount: number, pageIndex: number): PageWindow {
-    const pageCount = Math.max(1, Math.ceil(rowCount / RESULTS_PAGE_SIZE));
+export function getPageWindow(rowCount: number, pageIndex: number, pageSize = RESULTS_PAGE_SIZE): PageWindow {
+    const pageCount = Math.max(1, Math.ceil(rowCount / pageSize));
     const safePageIndex = Math.min(Math.max(0, pageIndex), pageCount - 1);
-    const start = safePageIndex * RESULTS_PAGE_SIZE;
+    const start = safePageIndex * pageSize;
 
     return {
         pageIndex: safePageIndex,
         pageCount,
         start,
-        end: Math.min(start + RESULTS_PAGE_SIZE, rowCount),
+        end: Math.min(start + pageSize, rowCount),
     };
 }
 
