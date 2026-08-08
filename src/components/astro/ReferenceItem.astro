@@ -10,7 +10,7 @@ const { id, name } = Astro.props;
 ---
 
 <section class='scroll-mt-24 border-t border-base-300 py-5 first:border-t-0 first:pt-0' id={id}>
-    <h3 class='text-base font-semibold'><code>{name}</code></h3>
+    <h4 class='text-base font-semibold'><code>{name}</code></h4>
     <div class='mt-1 text-sm text-base-content/70'><slot name='description' /></div>
     <CodeBlock><slot /></CodeBlock>
 </section>

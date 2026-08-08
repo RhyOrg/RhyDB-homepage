@@ -94,7 +94,11 @@
     }
 
     & h3 {
-        scroll-margin-top: 6rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0.4rem;
+        font-size: 1.1rem;
+        font-weight: 650;
+        letter-spacing: -0.01em;
     }
 
     & p {
@@ -507,7 +511,7 @@
     content: '#';
 }
 
-.documentation-page h3::before {
+.documentation-page h4::before {
     margin-right: 0.4rem;
     color: var(--color-accent);
     content: '→';

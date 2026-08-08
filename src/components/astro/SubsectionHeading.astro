@@ -1,0 +1,12 @@
+---
+import SectionHeading from './SectionHeading.astro';
+
+interface Props {
+    id?: string;
+    class?: string;
+}
+---
+
+<SectionHeading {...Astro.props} level={3}>
+    <slot />
+</SectionHeading>

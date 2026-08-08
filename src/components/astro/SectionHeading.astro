@@ -2,15 +2,26 @@
 interface Props {
     id?: string;
     class?: string;
+    level?: 2 | 3;
 }
 
-const { id, class: className } = Astro.props;
+const { id, class: className, level = 2 } = Astro.props;
+const Heading = level === 3 ? 'h3' : 'h2';
 ---
 
-<h2 id={id} class:list={['section-heading', className]}>
-    {id && <a class='section-heading-link' href={`#${id}`} aria-label='Link to this section' />}
+<Heading id={id} class:list={['section-heading', className]}>
+    {
+        id && (
+            <a
+                class='section-heading-link'
+                href={`#${id}`}
+                aria-label='Link to this section'
+                data-prefix={'#'.repeat(level)}
+            />
+        )
+    }
     <slot />
-</h2>
+</Heading>
 
 <style>
     .section-heading {
@@ -24,6 +35,6 @@ const { id, class: className } = Astro.props;
 
     .section-heading-link::before {
         margin-right: 0.45rem;
-        content: '##';
+        content: attr(data-prefix);
     }
 </style>
