@@ -3,6 +3,8 @@ import {
     buildConsoleSelectionHash,
     buildConsoleShareHash,
     buildConsoleShareUrl,
+    isLocalDataConsoleHash,
+    LOCAL_DATA_CONSOLE_HASH,
     normalizeServerUrl,
 } from './serverUrl';
 
@@ -52,5 +54,14 @@ describe('buildConsoleSelectionHash', () => {
         expect(buildConsoleSelectionHash('https://rhydb.example.org/api')).toBe(
             '#server=https%3A%2F%2Frhydb.example.org%2Fapi',
         );
+    });
+});
+
+describe('isLocalDataConsoleHash', () => {
+    it('recognizes the local-data Console link', () => {
+        expect(LOCAL_DATA_CONSOLE_HASH).toBe('#your-data');
+        expect(isLocalDataConsoleHash(LOCAL_DATA_CONSOLE_HASH)).toBe(true);
+        expect(isLocalDataConsoleHash('#server=https%3A%2F%2Frhydb.example.org')).toBe(false);
+        expect(isLocalDataConsoleHash('')).toBe(false);
     });
 });

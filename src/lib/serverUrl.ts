@@ -1,3 +1,5 @@
+export const LOCAL_DATA_CONSOLE_HASH = '#your-data';
+
 export function normalizeServerUrl(value: string) {
     const trimmed = value.trim().replace(/\/+$/, '');
     const url = new URL(trimmed);
@@ -25,4 +27,8 @@ export function buildConsoleShareHash(server: string, query: string) {
 
 export function buildConsoleSelectionHash(server: string) {
     return buildConsoleShareHash(server, '');
+}
+
+export function isLocalDataConsoleHash(hash: string) {
+    return hash === LOCAL_DATA_CONSOLE_HASH;
 }

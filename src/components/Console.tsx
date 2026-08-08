@@ -2,7 +2,13 @@ import { lazy, Suspense, type SyntheticEvent, useCallback, useEffect, useRef, us
 import QueryRunner, { type QueryRunnerHandle } from './QueryRunner';
 import { DEFAULT_CONSOLE_SERVER, RHYDB_WASM_ENABLED, RHYDB_WASM_VERSION } from '../config';
 import { fetchRhyDBInfo, type RhyDBInfo } from '../lib/rhydbInfo';
-import { buildConsoleSelectionHash, buildConsoleShareUrl, normalizeServerUrl } from '../lib/serverUrl';
+import {
+    buildConsoleSelectionHash,
+    buildConsoleShareUrl,
+    isLocalDataConsoleHash,
+    LOCAL_DATA_CONSOLE_HASH,
+    normalizeServerUrl,
+} from '../lib/serverUrl';
 import type { QueryRow } from '../lib/types';
 import { publicInstances, sarsCov2PublicInstance, type PublicInstance } from '../data/publicInstances';
 import { getRandomSarsCov2Query } from '../data/randomQueries';
@@ -43,8 +49,11 @@ export default function Console() {
     const sharedParams = new URLSearchParams(location.hash.slice(1));
     const sharedServer = sharedParams.get('server');
     const initialQuery = sharedParams.get('query') || '';
+    const localDataRequested = isLocalDataConsoleHash(location.hash);
     const [serverInput, setServerInput] = useState(() => sharedServer || storedServer() || DEFAULT_CONSOLE_SERVER);
-    const [connectionMode, setConnectionMode] = useState<ConnectionMode>(sharedServer ? 'custom' : 'public');
+    const [connectionMode, setConnectionMode] = useState<ConnectionMode>(
+        localDataRequested ? 'local' : sharedServer ? 'custom' : 'public',
+    );
     const [selectedPublicId, setSelectedPublicId] = useState(publicInstances[0].id);
     const [connection, setConnection] = useState<Connection | null>(null);
     const [connecting, setConnecting] = useState(Boolean(sharedServer));
@@ -133,6 +142,7 @@ export default function Console() {
             return;
         }
 
+        setConnectionMode(localDataRequested ? 'local' : 'public');
         remoteConnectionRequest.current += 1;
         schemaRequest.current += 1;
         setConnecting(false);
@@ -140,7 +150,7 @@ export default function Console() {
         setSchema({ status: 'idle', rows: [], error: null });
         setConnectionError(null);
         setLinkCopied(false);
-    }, [connectTo, sharedServer]);
+    }, [connectTo, localDataRequested, sharedServer]);
 
     useEffect(() => {
         setQuery(initialQuery);
@@ -178,6 +188,11 @@ export default function Console() {
     const selectMode = (mode: ConnectionMode) => {
         setConnectionMode(mode);
         setConnectionError(null);
+        if (mode === 'local' && location.hash !== LOCAL_DATA_CONSOLE_HASH) {
+            navigate({ pathname: location.pathname, hash: LOCAL_DATA_CONSOLE_HASH });
+        } else if (mode !== 'local' && localDataRequested) {
+            navigate({ pathname: location.pathname, hash: '' });
+        }
     };
 
     const changeTarget = () => {

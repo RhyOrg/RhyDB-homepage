@@ -1,0 +1,28 @@
+---
+title: How to use RhyDB
+description: The different ways to run RhyDB
+lead: RhyDB can run as a server, inside a Python process or directly in a web browser.
+section: Concepts
+order: 2
+---
+
+import { withBase } from '../../../lib/paths';
+import { LOCAL_DATA_CONSOLE_HASH } from '../../../lib/serverUrl';
+
+## Overview
+
+RhyDB is available in different forms and through different packages, tailored to different use cases.
+
+**Note: We are still refining the process for creating and inserting data into a new RhyDB database. Detailed instructions for using each form will be added to this documentation as soon as we have stablized them.**
+
+## Server mode
+
+RhyDB can run as a standalone program, typically deployed on a server. A preprocessing process first converts input records and their configuration into the database state. The server then loads this state and exposes an HTTP API through which applications can inspect the database and execute queries. This form is suitable for a central database that serves several users or applications, such as a data portal or an analysis dashboards.
+
+## Python package
+
+RhyDB is available as a [Python package](https://pypi.org/project/rhydb/). The package embeds the database in the Python process: it can create tables, load entries, execute queries and save or open processed database states. It is particularly suitable for integration into bioinformatics pipelines as well as for interactive data exploration in environments such as Jupyter notebooks. The application has direct control over the database and its data throughout the workflow.
+
+## Inside the browser with WebAssembly
+
+RhyDB is available as a WebAssembly package (which is a portable binary format that allows software compiled from languages such as C++ to run in a web browser). The [RhyDB WebAssembly](https://github.com/GenSpectrum/LAPIS-SILO/releases) package brings the database engine into the browser, where it can preprocess, index and query data without sending the files to a remote server. It can be used in the <a href={withBase(`/console${LOCAL_DATA_CONSOLE_HASH}`)}>RhyDB Console on this website</a> or integrated into another web application that needs to store and analyze data locally in the browser.
