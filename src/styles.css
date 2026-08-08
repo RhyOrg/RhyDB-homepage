@@ -58,6 +58,10 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    ::selection {
+        background-color: #20bacb;
+    }
+
     code,
     pre {
         font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
