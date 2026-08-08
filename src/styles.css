@@ -50,6 +50,10 @@
         height: 100%;
     }
 
+    html {
+        font-variant-ligatures: none;
+    }
+
     body {
         margin: 0;
         background: var(--color-base-100);
