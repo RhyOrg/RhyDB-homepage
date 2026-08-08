@@ -525,6 +525,26 @@
     box-shadow: 3px 3px 0 var(--color-base-300);
 }
 
+.documentation-page pre {
+    margin: 1rem 0;
+    overflow-x: auto;
+    border-radius: var(--radius-box);
+    background: var(--color-neutral);
+    padding: 1rem;
+    color: var(--color-neutral-content);
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+}
+
+.documentation-page pre code {
+    display: block;
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+    white-space: pre;
+    tab-size: 4;
+}
+
 .table {
     border-collapse: collapse;
     font-size: 0.72rem;

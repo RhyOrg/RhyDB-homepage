@@ -6,44 +6,51 @@ section: Reference
 order: 6
 ---
 
-import CodeBlock from '../../../components/astro/CodeBlock.astro';
 import Note from '../../../components/astro/Note.astro';
 
 ## POST /query
 
 Send the query as a plain-text request body. NDJSON is the default response format.
 
-<CodeBlock>{`curl -X POST \\
-  -H 'Content-Type: text/plain' \\
-  -H 'Accept: application/x-ndjson' \\
-  --data "default.groupBy({count := count()})" \\
-  https://rhydb.example.org/query`}</CodeBlock>
+```shell
+curl -X POST \
+  -H 'Content-Type: text/plain' \
+  -H 'Accept: application/x-ndjson' \
+  --data "default.groupBy({count := count()})" \
+  https://rhydb.example.org/query
+```
 
 Each non-empty response line is an independent JSON object:
 
-<CodeBlock>{`{"count":9430508}`}</CodeBlock>
+```json
+{ "count": 9430508 }
+```
 
 ## Apache Arrow output
 
 Send `Accept: application/vnd.apache.arrow.stream` to receive an Apache Arrow IPC stream. Arrow preserves the result schema, is efficient for large results, and lets clients detect a truncated stream through its end marker.
 
-<CodeBlock>{`curl -X POST \\
-  -H 'Content-Type: text/plain' \\
-  -H 'Accept: application/vnd.apache.arrow.stream' \\
-  --data 'default.limit(100)' \\
-  https://rhydb.example.org/query \\
-  --output result.arrow`}</CodeBlock>
+```shell
+curl -X POST \
+  -H 'Content-Type: text/plain' \
+  -H 'Accept: application/vnd.apache.arrow.stream' \
+  --data 'default.limit(100)' \
+  https://rhydb.example.org/query \
+  --output result.arrow
+```
 
 ## GET /info
 
 Return information about the loaded database, including the RhyDB version and number of sequence records.
 
-<CodeBlock>{`{
-  "version": "0.13.1",
-  "sequenceCount": 1000000,
-  "horizontalBitmapsSize": 60000000,
-  "verticalBitmapsSize": 58000000
-}`}</CodeBlock>
+```json
+{
+    "version": "0.13.1",
+    "sequenceCount": 1000000,
+    "horizontalBitmapsSize": 60000000,
+    "verticalBitmapsSize": 58000000
+}
+```
 
 ## GET /health
 
@@ -80,10 +87,12 @@ Return `200` with `{"status":"UP"}` when the server is ready. During startup, th
 
 Errors are JSON regardless of the requested result format.
 
-<CodeBlock>{`{
-  "error": "Bad request",
-  "message": "description of the problem"
-}`}</CodeBlock>
+```json
+{
+    "error": "Bad request",
+    "message": "description of the problem"
+}
+```
 
 - `400`: malformed or invalid query.
 - `404`: unknown endpoint.

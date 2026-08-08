@@ -1,0 +1,144 @@
+---
+title: Queries
+description: The declarative query model and basic syntax.
+lead: RhyDB queries are declarative and support a pipeline syntax.
+section: Concepts
+order: 4
+---
+
+import { withBase } from '../../../lib/paths';
+
+## Declarative query language
+
+RhyDB's query language is based on SaneQL which is declarative and conceptually like SQL but has a more consistent syntax and resembles typical dataframe APIs. SaneQL was proposed by T. Neumann and V. Leis in their paper ["A Critique of Modern SQL And A Proposal Towards A Simple and Expressive Query Language" (2024)](https://www.cidrdb.org/cidr2024/papers/p48-neumann.pdf).
+
+A declarative query describes the result through relational operators without specifying the physical steps used to compute it. The order of the operators defines the meaning of the query, while the query optimizer determines a physical execution plan that can differ from the written expression.
+
+## Tables and column symbols
+
+Relational operators work on tables and scalar values. A table name identifies a table. Column identifiers refer to columns in the table that is currently in scope. The names of columns, relations and operators are also called symbols.
+
+## Pipeline operators
+
+Every pipeline operator takes a table as input and produces a table as output. The response schema — which fields are returned and their types — is always the output schema of the last operator in the pipeline.
+
+### Pipeline-style syntax
+
+A query can be written as a pipeline of operators chained with `expr.method(arg1)` syntax. The dot passes the table produced on its left as the first argument of the next operator. This is also known as the [Uniform Function Call Syntax (UFCS)](https://en.wikipedia.org/wiki/Uniform_function_call_syntax). As a simple example, the following query counts the sequences per lineage in Switzerland in a table called "measles":
+
+```saneql
+measles
+  .filter(country = 'Switzerland')
+  .groupBy({count := count()}, {lineage})
+  .orderBy({count.desc()})
+```
+
+### Functional-style syntax
+
+The same query can be written as nested function calls such as `method(expr, arg1)`. The example above can be written in functional-style syntax as:
+
+```saneql
+orderBy(
+  groupBy(
+    filter(measles, country = 'Switzerland'),
+    {count := count()},
+    {lineage}
+  ),
+  {desc(count)}
+)
+```
+
+### Operator arguments
+
+SaneQL operator signatures distinguish table, expression and symbol arguments, as well as lists of expressions or symbols. A table argument supplies rows and columns to an operator; an expression is an unevaluated term such as a filter predicate; and a symbol names a column, relation or operator. RhyDB uses set literals for arguments such as the columns of `project` or `groupBy`. Record literals represent named expressions such as `{count := count()}`. Arguments can be positional or named with `:=`; after the first named argument, all remaining arguments must also be named.
+
+## Boolean and comparison operators
+
+- `&&` combines two expressions with logical AND, `||` combines them with logical OR and `!` negates an expression.
+- `=`, `<>`, `<`, `<=`, `>` and `>=` compare a column with another value.
+
+## Literals
+
+Literals represent values written directly in a query. In addition to scalar values, RhyDB has set and record literals for operator arguments and named output fields.
+
+<div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+    <table className='table table-sm'>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Syntax</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>String</td>
+                <td>single-quoted</td>
+                <td>
+                    <code>'Switzerland'</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Integer</td>
+                <td>bare number</td>
+                <td>
+                    <code>42</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Float</td>
+                <td>decimal</td>
+                <td>
+                    <code>3.14</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Boolean</td>
+                <td>
+                    <code>true</code> or <code>false</code>
+                </td>
+                <td>
+                    <code>true</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Null</td>
+                <td>
+                    <code>null</code>
+                </td>
+                <td>
+                    <code>null</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Date</td>
+                <td>
+                    <code>'YYYY-MM-DD'::date</code>
+                </td>
+                <td>
+                    <code>'2021-03-15'::date</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Set</td>
+                <td>
+                    <code>&#123;elem1, elem2, ...&#125;</code>
+                </td>
+                <td>
+                    <code>&#123;'A', 'B', 'C'&#125;</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Record</td>
+                <td>
+                    <code>&#123;field1 := value1, ...&#125;</code>
+                </td>
+                <td>
+                    <code>&#123;x := 'A', y := 'B', z := 3&#125;</code>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+The <a href={withBase('/docs/reference/query-language')}>query-language reference</a> describes the operators and functions currently implemented by RhyDB.

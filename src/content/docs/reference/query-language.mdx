@@ -6,15 +6,16 @@ section: Reference
 order: 4
 ---
 
-import CodeBlock from '../../../components/astro/CodeBlock.astro';
 import Note from '../../../components/astro/Note.astro';
 import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
 
 ## Query structure
 
-<CodeBlock>{`default
+```saneql
+default
   .filter(country = 'Switzerland')
-  .groupBy({count := count()}, {pangoLineage})`}</CodeBlock>
+  .groupBy({count := count()}, {pangoLineage})
+```
 
 Method syntax is equivalent to passing the value on the left as the first function argument. Named arguments use `:=`. After a named argument, all remaining arguments must also be named.
 
@@ -104,8 +105,10 @@ Method syntax is equivalent to passing the value on the left as the first functi
 
 Boolean expressions use `&&` (and), `||` (or), and `!` (not). Parentheses control grouping. Comparisons use `=`, `<>`, `<`, `<=`, `>`, and `>=`; their left-hand side must be a column.
 
-<CodeBlock>{`country = 'Germany' && age >= 18
-!(date < '2024-01-01'::date)`}</CodeBlock>
+```saneql
+country = 'Germany' && age >= 18
+!(date < '2024-01-01'::date)
+```
 
 ## Pipeline operations
 

@@ -3,10 +3,9 @@ title: RhyDB for SQL users
 description: A comparison of RhyDB pipelines with SQL.
 lead: RhyDB uses table pipelines rather than SQL clauses. This page maps common SQL operations to RhyDB.
 section: Concepts
-order: 4
+order: 5
 ---
 
-import CodeBlock from '../../../components/astro/CodeBlock.astro';
 import Note from '../../../components/astro/Note.astro';
 
 ## Correspondence
@@ -94,20 +93,24 @@ import Note from '../../../components/astro/Note.astro';
 
 ## The same summary in both styles
 
-<CodeBlock>{`-- SQL
+```sql
+-- SQL
 SELECT country, COUNT(*) AS count
 FROM default
 WHERE date >= DATE '2024-01-01'
 GROUP BY country
 ORDER BY count DESC
-LIMIT 10;`}</CodeBlock>
+LIMIT 10;
+```
 
-<CodeBlock>{`-- RhyDB query language
+```saneql
+-- RhyDB query language
 default
   .filter(date >= '2024-01-01'::date)
   .groupBy({count := count()}, {country})
   .orderBy({count.desc()})
-  .limit(10)`}</CodeBlock>
+  .limit(10)
+```
 
 ## Differences
 

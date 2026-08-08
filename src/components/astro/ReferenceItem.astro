@@ -1,6 +1,4 @@
 ---
-import CodeBlock from './CodeBlock.astro';
-
 interface Props {
     id?: string;
     name: string;
@@ -12,5 +10,5 @@ const { id, name } = Astro.props;
 <section class='scroll-mt-24 border-t border-base-300 py-5 first:border-t-0 first:pt-0' id={id}>
     <h4 class='text-base font-semibold'><code>{name}</code></h4>
     <div class='mt-1 text-sm text-base-content/70'><slot name='description' /></div>
-    <CodeBlock><slot /></CodeBlock>
+    <pre><code><slot /></code></pre>
 </section>

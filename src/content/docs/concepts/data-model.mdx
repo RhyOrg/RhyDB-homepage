@@ -1,50 +1,145 @@
 ---
-title: Data model and queries
-description: Tables, pipelines, schemas, aligned sequences, and reference coordinates.
-lead: RhyDB queries transform tables through a pipeline. Sequence operations use reference coordinates.
+title: Data model
+description: Tables, column types and indexes in RhyDB.
+lead: A RhyDB database consists of typed tables and indexes.
 section: Concepts
 order: 3
 ---
 
-import CodeBlock from '../../../components/astro/CodeBlock.astro';
-import Note from '../../../components/astro/Note.astro';
-import { withBase } from '../../../lib/paths';
+## Tables, rows and columns
 
-## Tables, rows, and columns
+A RhyDB database consists of tables. Each table has a schema that defines its columns and their types. Every row in the table follows that schema.
 
-A RhyDB table contains rows with the same schema. A row usually represents one sample or sequence record. Columns contain metadata or sequences and have types such as string, integer, date, boolean, nucleotide sequence, or amino-acid sequence.
+## Column types
 
-Table and column names are configured by each RhyDB instance. Examples in this documentation use the table `default` and columns such as `country`, `date`, `main`, and `S`; another instance can expose a different schema.
+RhyDB supports the following types for stored columns:
 
-## Queries are pipelines
+<div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+    <table className='table table-sm'>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <code>string</code>
+                </td>
+                <td>Text values, optionally dictionary-encoded and bitmap-indexed.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>compressed string</code>
+                </td>
+                <td>Text compressed with a shared Zstandard dictionary (e.g. used for unaligned sequences).</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>int</code>
+                </td>
+                <td>Signed 32-bit whole numbers.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>float</code>
+                </td>
+                <td>Double-precision floating-point numbers.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>date</code>
+                </td>
+                <td>
+                    Calendar dates in <code>YYYY-MM-DD</code> format.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>boolean</code>
+                </td>
+                <td>
+                    <code>true</code> or <code>false</code> values.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>nucleotide sequence</code>
+                </td>
+                <td>Aligned nucleotide symbols and their insertions.</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>amino-acid sequence</code>
+                </td>
+                <td>Aligned amino-acid symbols and their insertions.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-A query starts with a table and chains operations from left to right. Each operation consumes a table and produces another table, so the output of one operation becomes the input of the next.
+## Indexes
 
-<CodeBlock>{`default
-  .filter(country = 'Switzerland')
-  .groupBy({count := count()}, {pangoLineage})
-  .orderBy({count.desc()})`}</CodeBlock>
+A bitmap index can be enabled for a string column and supports efficient equality and set-membership filters. Each aligned nucleotide and amino-acid sequence has built-in bitmap structures that index symbols by reference position. A lineage index augments an indexed string column with a configured directed acyclic graph of lineage relationships, enabling queries that include sublineages.
 
-This query starts with every row, keeps rows from Switzerland, counts them by lineage, and orders the resulting groups. The last operation determines the final rows and their order.
+## Example schemas
 
-Operations such as `filter`, `orderBy`, and `limit` preserve the input columns. Operations such as `project`, `map`, `groupBy`, and mutation aggregations define a new output schema.
+The following schemas illustrate two example arrangements of tables and columns in RhyDB.
 
-## Aligned sequences and reference positions
+### Example: one table per organism
 
-An aligned sequence has positions corresponding to a configured reference sequence. Queries can test whether a sample differs from the reference at a position or carries a particular symbol there.
+One possible schema has a separate table for every organism. In this example, each row represents one sequence record. The columns of each table are defined independently. The model is similar to how Loculus and Pathoplexus currently organize organism-specific datasets.
 
-- A substitution has a different symbol at a reference position.
-- A deletion is represented by a gap at a reference position.
-- An insertion contains symbols between reference positions and is stored separately from the alignment.
-- Ambiguous symbols express incomplete information and affect exact and relaxed matching.
+```text
+measles(
+  accession: string,
+  date: date,
+  location: string (indexed),
+  lineage: string (indexed),
+  sequence: compressed string,
+  alignment: nucleotide sequence,
+  N: amino-acid sequence,
+  ...
+)
 
-<Note>
-    Positions in RhyDB's sequence functions are 1-based. A sequence name is always explicit because an instance may
-    contain several genome segments or translated genes.
-</Note>
+mpox(
+  accession: string,
+  date: date,
+  location: string (indexed),
+  outbreak_lineage: string (indexed),
+  sequence: compressed string,
+  alignment: nucleotide sequence,
+  ...
+)
+```
 
-## Inspecting an instance
+### Example: shared records and separate alignments
 
-The query `default.schema()` returns the field names and types available in the table. The <a href={withBase('/console')}>Console</a> exposes the same schema view after connecting to an instance.
+Another possible schema stores columns shared across reference genomes in one table. A separate table for every reference genome contains a join key, aligned sequence columns and columns derived from that alignment. In this model, a sequence may be not aligned to any reference, or be aligned to one or multiple references.
 
-<CodeBlock>default.schema()</CodeBlock>
+```text
+records(
+  accession: string,
+  organism: string (indexed),
+  date: date,
+  location: string (indexed),
+  sequence: compressed string,
+  ...
+)
+
+measles_alignment(
+  accesson: string,
+  alignment: nucleotide sequence,
+  N: amino-acid sequence,
+  completeness: float,
+  ...
+)
+
+mpox_alignment(
+  accession: string,
+  alignment: nucleotide sequence,
+  completeness: float,
+  ...
+)
+```
