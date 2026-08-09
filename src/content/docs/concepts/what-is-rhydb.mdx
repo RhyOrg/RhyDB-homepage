@@ -24,11 +24,14 @@ What makes RhyDB unique are its capabilities to handle sequencing data and featu
 
 ## Where it fits
 
-RhyDB is a foundational software designed to be used either directly by data scientists or by other software. It aims to be very unopinionated: it stores and returns data as they are given but does not impose any biological or statistical assumptions; and it does not enforce any data schema beyond being relational (i.e. shaped as tables). This distinguishes RhyDB from other tools that the creators of RhyDB are also working on and that use RhyDB internally:
+RhyDB is a foundational software designed to be used either directly by data scientists or by other software. It aims to be very unopinionated: it stores and returns data as they are given but does not impose any biological or statistical assumptions; and it does not enforce any data schema beyond being relational (i.e. shaped as tables).
+
+RhyDB is used by various other tools that the team of RhyDB is also working on:
 
 - [Loculus](https://loculus.org/) is a comprehensive and modular package for sharing and managing pathogen sequence data. It does not only store data as provided but manages the bioinformatics processing (QC, alignment, lineage calling, etc.), versioning, authentication and much more. Loculus uses internally RhyDB as its query engine: when a user searches sequences on Loculus, RhyDB performs the work.
 - [Pathoplexus](https://pathoplexus.org) is one specific instance of Loculus for facilitating global sharing of viral genomic data.
 - [LAPIS](https://github.com/GenSpectrum/LAPIS) is a web service focusing on providing a simple web API to query sequencing data. It sits on top of SILO and translates web API calls to RhyDB queries, and it transforms RhyDB's result to various data formats.
+- [CoV-Spectrum](https://cov-spectrum.org) and [GenSpectrum](https://genspectrum.org) are web dashboards to discover and analyze variants of various viruses; they query RhyDB heavily.
 
 ## A short history and use in other projects
 
