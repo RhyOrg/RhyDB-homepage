@@ -1,10 +1,15 @@
 import { useSyncExternalStore } from 'react';
-import { getTutorialDatabaseState, loadTutorialDatabase, subscribeToTutorialDatabase } from '../lib/tutorialDatabase';
+import {
+    getTutorialDatabaseState,
+    loadTutorialDatabase,
+    subscribeToTutorialDatabase,
+    type TutorialDatabaseState,
+} from '../lib/tutorialDatabase';
 
 // Indexes the tutorial dataset into a RhyDB database that lives in this browser tab. Every tutorial
 // console on the page queries the database this button creates.
 export default function TutorialDataLoader() {
-    const state = useSyncExternalStore(subscribeToTutorialDatabase, getTutorialDatabaseState, getTutorialDatabaseState);
+    const state = useSyncExternalStore(subscribeToTutorialDatabase, getTutorialDatabaseState);
 
     return (
         <div className='my-4'>
@@ -25,17 +30,6 @@ export default function TutorialDataLoader() {
                 {buttonLabel(state.status)}
             </button>
 
-            {state.status === 'loading' && (
-                <p className='mt-2 text-sm text-base-content/60' role='status'>
-                    {state.message}
-                </p>
-            )}
-            {state.status === 'ready' && (
-                <p className='mt-2 text-sm text-base-content/60'>
-                    {state.info.sequenceCount.toLocaleString()} sequences are ready to query in this tab. Reloading the
-                    page clears them.
-                </p>
-            )}
             {state.status === 'error' && (
                 <p className='mt-2 alert border-error/25 bg-error/8 text-sm text-error' role='alert'>
                     {state.message}
@@ -45,7 +39,7 @@ export default function TutorialDataLoader() {
     );
 }
 
-function buttonLabel(status: ReturnType<typeof getTutorialDatabaseState>['status']) {
+function buttonLabel(status: TutorialDatabaseState['status']) {
     if (status === 'loading') return 'Loading…';
     if (status === 'ready') return 'Loaded';
     if (status === 'error') return 'Try again';

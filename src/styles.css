@@ -519,11 +519,70 @@
     content: '#';
 }
 
-.documentation-page h4::before,
-.tutorial-task::before {
+.documentation-page h4::before {
     margin-right: 0.4rem;
     color: var(--color-accent);
     content: '→';
+}
+
+/* Tutorial steps are numbered per section, so every heading restarts the counter. */
+.documentation-page h2 {
+    counter-reset: tutorial-task;
+}
+
+.tutorial-task {
+    position: relative;
+    margin: 0.25rem 0;
+    border-left: 2px solid var(--color-base-300);
+    padding: 0.05rem 0 0.15rem 1.75rem;
+    counter-increment: tutorial-task;
+}
+
+.documentation-page .tutorial-task p {
+    margin: 0;
+}
+
+.tutorial-task::before {
+    display: flex;
+    position: absolute;
+    top: 0.15rem;
+    left: 0.4rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-accent);
+    width: 1.05rem;
+    height: 1.05rem;
+    color: var(--color-accent-content);
+    content: counter(tutorial-task);
+    font-weight: 700;
+    font-size: 0.6rem;
+}
+
+/* A quiet inline strip rather than a full code block: a step is a line of prose plus its query. */
+.documentation-page .tutorial-query {
+    display: block;
+    margin: 0.2rem 0 0;
+    border: 1px solid var(--color-base-300);
+    border-left: 2px solid var(--color-accent);
+    border-radius: 0;
+    background: var(--color-base-200);
+    padding: 0.2rem 0.45rem;
+    font-size: 0.74rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.documentation-page .tutorial-answer {
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+}
+
+.tutorial-answer::before {
+    color: var(--color-accent);
+    content: 'Answer: ';
+    font-weight: 700;
 }
 
 .documentation-page pre,

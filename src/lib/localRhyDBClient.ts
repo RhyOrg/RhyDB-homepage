@@ -22,8 +22,8 @@ export class LocalRhyDBClient implements QueryTarget {
         this.worker = this.createWorker();
     }
 
-    preprocess(config: string, files: File[], onEvent: (event: LocalRhyDBEvent) => void) {
-        this.eventListener = onEvent;
+    preprocess(config: string, files: File[], onEvent?: (event: LocalRhyDBEvent) => void) {
+        this.eventListener = onEvent ?? null;
         return this.request<RhyDBInfo>({ type: 'preprocess', config, files });
     }
 

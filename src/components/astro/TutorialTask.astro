@@ -1,4 +1,6 @@
-<!-- A task the reader carries out in the console below it. A long task reaches MDX as a paragraph and
-a short one as bare text, so the paragraph is laid out inline to keep both forms flowing after the
-marker that .tutorial-task draws. -->
-<div class='tutorial-task [&>p]:inline mb-2'><slot /></div>
+---
+// A step the reader carries out in the console below it. The step number comes from a CSS counter
+// that .documentation-page h2 restarts, so each section counts from one.
+---
+
+<div class='tutorial-task'><slot /></div>
