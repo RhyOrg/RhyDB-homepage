@@ -3,6 +3,7 @@ import {
     buildConsoleSelectionHash,
     buildConsoleShareHash,
     buildConsoleShareUrl,
+    connectionModeForLocalData,
     isLocalDataConsoleHash,
     LOCAL_DATA_CONSOLE_HASH,
     normalizeServerUrl,
@@ -63,5 +64,20 @@ describe('isLocalDataConsoleHash', () => {
         expect(isLocalDataConsoleHash(LOCAL_DATA_CONSOLE_HASH)).toBe(true);
         expect(isLocalDataConsoleHash('#server=https%3A%2F%2Frhydb.example.org')).toBe(false);
         expect(isLocalDataConsoleHash('')).toBe(false);
+    });
+});
+
+describe('connectionModeForLocalData', () => {
+    it('selects local data for its direct link', () => {
+        expect(connectionModeForLocalData(true, 'public')).toBe('local');
+    });
+
+    it('keeps an explicitly selected remote tab when leaving local data', () => {
+        expect(connectionModeForLocalData(false, 'custom')).toBe('custom');
+        expect(connectionModeForLocalData(false, 'public')).toBe('public');
+    });
+
+    it('falls back to public instances when browser navigation removes the local-data hash', () => {
+        expect(connectionModeForLocalData(false, 'local')).toBe('public');
     });
 });

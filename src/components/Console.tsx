@@ -5,9 +5,11 @@ import { fetchRhyDBInfo, type RhyDBInfo } from '../lib/rhydbInfo';
 import {
     buildConsoleSelectionHash,
     buildConsoleShareUrl,
+    connectionModeForLocalData,
     isLocalDataConsoleHash,
     LOCAL_DATA_CONSOLE_HASH,
     normalizeServerUrl,
+    type ConsoleConnectionMode,
 } from '../lib/serverUrl';
 import type { QueryRow } from '../lib/types';
 import { publicInstances, sarsCov2PublicInstance, type PublicInstance } from '../data/publicInstances';
@@ -37,8 +39,6 @@ type LocalConnection = {
 
 type Connection = RemoteConnection | LocalConnection;
 
-type ConnectionMode = 'public' | 'custom' | 'local';
-
 type SchemaState =
     | { status: 'idle' | 'loading'; rows: QueryRow[]; error: null }
     | { status: 'ready'; rows: QueryRow[]; error: null }
@@ -51,8 +51,8 @@ export default function Console() {
     const initialQuery = sharedParams.get('query') || '';
     const localDataRequested = isLocalDataConsoleHash(location.hash);
     const [serverInput, setServerInput] = useState(() => sharedServer || storedServer() || DEFAULT_CONSOLE_SERVER);
-    const [connectionMode, setConnectionMode] = useState<ConnectionMode>(
-        localDataRequested ? 'local' : sharedServer ? 'custom' : 'public',
+    const [connectionMode, setConnectionMode] = useState<ConsoleConnectionMode>(
+        connectionModeForLocalData(localDataRequested, sharedServer ? 'custom' : 'public'),
     );
     const [selectedPublicId, setSelectedPublicId] = useState(publicInstances[0].id);
     const [connection, setConnection] = useState<Connection | null>(null);
@@ -142,7 +142,7 @@ export default function Console() {
             return;
         }
 
-        setConnectionMode(localDataRequested ? 'local' : 'public');
+        setConnectionMode((currentMode) => connectionModeForLocalData(localDataRequested, currentMode));
         remoteConnectionRequest.current += 1;
         schemaRequest.current += 1;
         setConnecting(false);
@@ -185,7 +185,7 @@ export default function Console() {
         selectRemoteServer(serverInput);
     };
 
-    const selectMode = (mode: ConnectionMode) => {
+    const selectMode = (mode: ConsoleConnectionMode) => {
         setConnectionMode(mode);
         setConnectionError(null);
         if (mode === 'local' && location.hash !== LOCAL_DATA_CONSOLE_HASH) {

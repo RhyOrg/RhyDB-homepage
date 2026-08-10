@@ -1,5 +1,7 @@
 export const LOCAL_DATA_CONSOLE_HASH = '#your-data';
 
+export type ConsoleConnectionMode = 'public' | 'custom' | 'local';
+
 export function normalizeServerUrl(value: string) {
     const trimmed = value.trim().replace(/\/+$/, '');
     const url = new URL(trimmed);
@@ -31,4 +33,12 @@ export function buildConsoleSelectionHash(server: string) {
 
 export function isLocalDataConsoleHash(hash: string) {
     return hash === LOCAL_DATA_CONSOLE_HASH;
+}
+
+export function connectionModeForLocalData(
+    localDataRequested: boolean,
+    currentMode: ConsoleConnectionMode,
+): ConsoleConnectionMode {
+    if (localDataRequested) return 'local';
+    return currentMode === 'local' ? 'public' : currentMode;
 }
