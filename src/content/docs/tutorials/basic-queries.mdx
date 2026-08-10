@@ -12,9 +12,10 @@ import IslandFallback from '../../../components/astro/IslandFallback.astro';
 import TutorialAnswer from '../../../components/astro/TutorialAnswer.astro';
 import TutorialQuery from '../../../components/astro/TutorialQuery.astro';
 import TutorialTask from '../../../components/astro/TutorialTask.astro';
+import { withBase } from '../../../lib/paths';
 import { TUTORIAL_DATA_URL } from '../../../lib/tutorialDatabase';
 
-In this tutorial, we will write basic queries to work with metadata and alignments in RhyDB. It is recommended to first read this [short introduction into the query language](/docs/concepts/query-language) but it is not strictly necessary.
+In this tutorial, we will write basic queries to work with metadata and alignments in RhyDB. It is recommended to first read this <a href={withBase('/docs/concepts/query-language')}>short introduction into the query language</a> but it is not strictly necessary.
 
 ## Loading the data
 
