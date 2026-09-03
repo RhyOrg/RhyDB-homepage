@@ -119,6 +119,8 @@ default
 - The available tables and columns are configured per RhyDB instance.
 - Sequence predicates and aggregations understand reference coordinates, mutations, and ambiguity.
 - RhyDB currently provides `count()` as its aggregate function; it is not a general SQL engine.
+- Missing values are tested with `column.isNull()` and `column.isNotNull()`; `column = null` is an error rather than the always-unknown comparison SQL allows.
+- `!` is a set complement rather than SQL's `NOT`. Comparisons never match null cells, so `country <> 'Germany'` drops the rows whose country is null while `!(country = 'Germany')` keeps them.
 
 <Note title='Reading a query'>
     Read a RhyDB query from top to bottom as a series of intermediate tables. Operations such as `map`, `project`, and

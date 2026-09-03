@@ -18,7 +18,6 @@ When browser-local RhyDB is enabled, uploaded files, preprocessing, state loadin
 ```sh
 npm install
 npm run dev          # http://localhost:5001
-npm run wasm:download
 npm run dev:wasm     # http://localhost:5001 with browser-local RhyDB
 npm run check
 npm test
@@ -35,12 +34,12 @@ Run `npm run format` before committing formatting-sensitive changes.
 
 Astro reads these variables at build time:
 
-| Variable                       | Default                   | Purpose                                                                                            |
-| ------------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------- |
-| `PUBLIC_RHYDB_DEFAULT_SERVER`  | GenSpectrum staging RhyDB | Initial server shown by the Console. Visitors may connect another instance.                        |
-| `PUBLIC_RHYDB_EXERCISE_SERVER` | GenSpectrum staging RhyDB | Fixed server used by exercises and reference answers. It is not editable in the UI.                |
-| `PUBLIC_RHYDB_WASM_ENABLED`    | `false`                   | Adds the opt-in browser-local RhyDB target. Requires downloaded WASM assets and isolation headers. |
-| `PUBLIC_BASE_PATH`             | `/`                       | Public base path, such as `/rhydb-console/` for a GitHub Pages project site.                       |
+| Variable                       | Default                   | Purpose                                                                              |
+| ------------------------------ | ------------------------- | ------------------------------------------------------------------------------------ |
+| `PUBLIC_RHYDB_DEFAULT_SERVER`  | GenSpectrum staging RhyDB | Initial server shown by the Console. Visitors may connect another instance.          |
+| `PUBLIC_RHYDB_EXERCISE_SERVER` | GenSpectrum staging RhyDB | Fixed server used by exercises and reference answers. It is not editable in the UI.  |
+| `PUBLIC_RHYDB_WASM_ENABLED`    | `false`                   | Adds the opt-in browser-local RhyDB target. Requires cross-origin-isolation headers. |
+| `PUBLIC_BASE_PATH`             | `/`                       | Public base path, such as `/rhydb-console/` for a GitHub Pages project site.         |
 
 Example:
 
@@ -50,16 +49,13 @@ PUBLIC_RHYDB_DEFAULT_SERVER=https://rhydb.example.org npm run build
 
 ## Browser-local RhyDB
 
-The pthread-enabled RhyDB WASM release is pinned in `rhydb-wasm-source.txt`. Download and run it locally with:
+The pthread-enabled RhyDB WASM build comes from the [`@rhydb/rhydb-wasm`](https://www.npmjs.com/package/@rhydb/rhydb-wasm) dependency, whose version matches the RhyDB release. Run it locally with:
 
 ```sh
-npm run wasm:download
 npm run dev:wasm
 ```
 
-Set `PUBLIC_RHYDB_WASM_ENABLED=true` for other build or preview commands. `RHYDB_WASM_ASSET_DIR` may point at a directory containing another matching `rhydb_wasm.js` and `rhydb_wasm.wasm` pair.
-
-An enabled build fails when `rhydb_wasm.js` or `rhydb_wasm.wasm` is absent. Disabled builds omit both files and the local-data tab. GitHub Pages uses the disabled default.
+Set `PUBLIC_RHYDB_WASM_ENABLED=true` for other build or preview commands. `scripts/prepare-public.mjs` then copies `rhydb_wasm.js` and `rhydb_wasm.wasm` out of the package into `.generated-public/rhydb-wasm/`, because the Emscripten loader spawns its pthread workers from its own served URL. Disabled builds omit both files and the local-data tab. GitHub Pages uses the disabled default.
 
 WASM threads require a secure, cross-origin-isolated page. The development/preview server sets the headers when the feature flag is enabled, and the included nginx configuration sets them for container deployments:
 
@@ -68,7 +64,7 @@ Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
 
-The container build downloads the pinned release and enables browser-local RhyDB:
+The container build enables browser-local RhyDB:
 
 ```sh
 docker build -t rhydb-website .
@@ -87,7 +83,7 @@ The Console requests NDJSON and infers a few presentation details from the retur
 
 ## RhyDB compatibility
 
-`rhydb-version.txt` records the RhyDB commit against which the language reference, syntax highlighting, examples, and exercises were checked. When updating it, compare the site with RhyDB's `documentation/query_documentation.md` and validate exercise answers against the configured staging server.
+`rhydb-version.txt` records the RhyDB release against which the language reference, syntax highlighting, examples, and exercises were checked. Keep the `@rhydb/rhydb-wasm` dependency on that same version. When updating it, compare the site with RhyDB's `documentation/query_documentation.md` and validate exercise answers against the configured staging server.
 
 ## Docker
 

@@ -55,7 +55,9 @@ SaneQL operator signatures distinguish table, expression and symbol arguments, a
 ## Boolean and comparison operators
 
 - `&&` combines two expressions with logical AND, `||` combines them with logical OR and `!` negates an expression.
-- `=`, `<>`, `<`, `<=`, `>` and `>=` compare a column with another value.
+- `=`, `<>`, `<`, `<=`, `>` and `>=` compare a column with a literal value. The column may stand on either side of the operator.
+- A boolean column is a predicate by itself, so `filter(isHuman)` means `filter(isHuman = true)`.
+- A null cell matches no comparison, `<>` included. `isNull()` and `isNotNull()` test for missing values; comparing against the `null` literal is an error.
 
 ## Literals
 

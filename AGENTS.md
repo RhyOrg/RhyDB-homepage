@@ -36,17 +36,18 @@ preview port is 5001.
 
 ## RhyDB Query Behavior
 
-- `rhydb-version.txt` records the RhyDB commit this app is currently optimized against. When updating it, review the language reference, editor highlighting, examples, and exercises against the matching RhyDB `documentation/query_documentation.md`; also update `rhydb-wasm-source.txt` to the matching successful external WASM artifact.
-- Browser-local RhyDB is disabled by default. Enabled builds read `rhydb_wasm.js` and `rhydb_wasm.wasm` from `RHYDB_WASM_ASSET_DIR` (default `.rhydb-wasm/`) and require `PUBLIC_RHYDB_WASM_ENABLED=true` plus cross-origin-isolation response headers.
+- `rhydb-version.txt` records the RhyDB release this app is currently optimized against, and the `@rhydb/rhydb-wasm` dependency is pinned to the same version. When updating them, review the language reference, editor highlighting, examples, and exercises against the matching RhyDB `documentation/query_documentation.md`.
+- Browser-local RhyDB is disabled by default. Enabled builds require `PUBLIC_RHYDB_WASM_ENABLED=true` plus cross-origin-isolation response headers. `scripts/prepare-public.mjs` copies `rhydb_wasm.js` and `rhydb_wasm.wasm` out of `@rhydb/rhydb-wasm` into the generated public directory; the Emscripten loader spawns its pthread workers from its own served URL, so both files stay unbundled static assets.
 - `src/lib/runQuery.ts` sends plain-text RhyDB queries to `POST <server>/query` with
   `Accept: application/x-ndjson`.
-- `runBounded()` appends `.limit(100)` unless the query already has a limit, and retries without the
-  added limit only for RhyDB's unordered-output limit error.
+- `runBounded()` appends `.limit(100)` on its own line unless the query already has a limit, and does
+  not retry a rejected query without it.
 - Staging schema examples used by exercises include `country`, `region`, `division`, `date`,
   `pangoLineage`, `strain`, `main`, `unaligned_main`, and amino acid columns such as `S`, `N`, and
   `E`.
-- Integer comparisons with `>` / `<` may not be available on all RhyDB columns; prefer supported
-  query-language functions such as `between(...)` where appropriate.
+- Comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`) take a column on either side and a non-null
+  literal on the other. They never match null cells, `<>` included, while `!` is a set complement
+  that does keep null rows. `column = null` is a query error; use `isNull()` / `isNotNull()`.
 
 ## Tutorial Dataset
 

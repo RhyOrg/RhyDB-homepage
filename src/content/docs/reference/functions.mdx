@@ -20,7 +20,14 @@ import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
 </ReferenceItem>
 
 <ReferenceItem id='iso-week' name='isoWeek(column)'>
-    <span slot='description'>Return the ISO 8601 week number, from 1 through 53, for a date.</span>
+    <div slot='description'>
+        <p>
+            Return the ISO 8601 week date of a date column as a string of the form{' '}
+            <code>&lt;ISO-year&gt;-W&lt;ISO-week&gt;</code>, such as <code>2026-W12</code>. The zero-padded week keeps
+            the values sortable within a year. The ISO week-numbering year can differ from the calendar year around the
+            turn of the year: <code>2021-01-01</code> falls into <code>2020-W53</code>.
+        </p>
+    </div>
     {`default.map({week := date.isoWeek()})`}
 </ReferenceItem>
 
@@ -36,7 +43,10 @@ age.between(18, null)`}
 </ReferenceItem>
 
 <ReferenceItem id='null' name='isNull(column) / isNotNull(column)'>
-    <span slot='description'>Test whether a column value is null or non-null.</span>
+    <span slot='description'>
+        Test whether a column value is null or non-null. These are the only way to filter on missing values, because
+        comparing a column against the <code>null</code> literal is an error.
+    </span>
     {`isNotNull(date)`}
 </ReferenceItem>
 

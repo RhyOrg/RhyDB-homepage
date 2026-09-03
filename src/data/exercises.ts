@@ -34,7 +34,7 @@ export const exercises: Exercise[] = [
         explanation:
             'Filter the table to sequences from Switzerland. Then, use groupBy without grouping columns to count all remaining rows.',
         documentation: [
-            { label: 'Query pipelines', to: '/docs/concepts/data-model#queries-are-pipelines' },
+            { label: 'Query pipelines', to: '/docs/concepts/query-language#pipeline-operators' },
             { label: 'filter and groupBy', to: '/docs/reference/query-language#pipeline-operations' },
         ],
         answer: `default
@@ -116,13 +116,13 @@ XBB          | 987        | null`,
         slug: 'submissions-by-iso-week',
         title: 'Submissions by ISO week',
         question:
-            'Summarize sequences collected in 2024 by ISO calendar week. Return the week number and sequence count, ordered chronologically.',
-        outputExample: `week | count
----- | -----
-1    | 1234
-2    | 987`,
+            'Summarize sequences collected in 2024 by ISO calendar week. Return the ISO week and sequence count, ordered chronologically.',
+        outputExample: `week     | count
+-------- | -----
+2024-W01 | 1234
+2024-W02 | 987`,
         explanation:
-            'Filter the table to dates in 2024. Use map with isoWeek to add the week number, then use groupBy to count the sequences for each week. Order the rows by week.',
+            'Filter the table to dates in 2024. Use map with isoWeek to add the ISO week, then use groupBy to count the sequences for each week. Order the rows by week — the ISO week strings sort chronologically.',
         documentation: [
             { label: 'isoWeek', to: '/docs/reference/functions#iso-week' },
             { label: 'map and groupBy', to: '/docs/reference/query-language#pipeline-operations' },
@@ -145,10 +145,7 @@ sample-002 | Germany     | 2021-01-16 | B.1.1.7`,
         explanation:
             'Filter the table with hasMutation to keep sequences that differ from the nucleotide reference at position 23403. Project the requested columns, order the rows by strain and keep the first 20.',
         documentation: [
-            {
-                label: 'Reference coordinates',
-                to: '/docs/concepts/data-model#aligned-sequences-and-reference-positions',
-            },
+            { label: 'Reference coordinates', to: '/docs/reference/functions#sequence-functions' },
             { label: 'hasMutation', to: '/docs/reference/functions#has-mutation' },
         ],
         answer: `default
@@ -235,10 +232,7 @@ sample-052 | France  | 2021-01-16`,
         explanation:
             'Use aminoAcidInsertions to count insertions in the S protein. Project the requested columns, order the rows by count and use the inserted symbols and position to order ties, then keep the first 20.',
         documentation: [
-            {
-                label: 'Sequence insertions',
-                to: '/docs/concepts/data-model#aligned-sequences-and-reference-positions',
-            },
+            { label: 'Sequence insertions', to: '/docs/reference/query-language#insertions' },
             { label: 'aminoAcidInsertions', to: '/docs/reference/query-language#amino-acid-insertions' },
         ],
         answer: `default
@@ -301,7 +295,7 @@ G          | 8`,
         explanation:
             'Filter the table to sequences from Switzerland. Use aminoAcidMutations to get changes on the S protein with a minimum proportion of 10%, then use groupBy to count the mutation rows for each resulting symbol. Order the rows by their counts.',
         documentation: [
-            { label: 'Pipeline schemas', to: '/docs/concepts/data-model#queries-are-pipelines' },
+            { label: 'Pipeline schemas', to: '/docs/concepts/query-language#pipeline-operators' },
             { label: 'aminoAcidMutations', to: '/docs/reference/query-language#amino-acid-mutations' },
         ],
         answer: `default
@@ -322,10 +316,7 @@ G          | 8`,
             'Filter the table with aminoAcidMutationProfile to keep S sequences within two differences of the specified symbols at positions 501 and 452. Then, use groupBy without grouping columns to count the remaining rows.',
         documentation: [
             { label: 'Mutation profiles', to: '/docs/reference/functions#mutation-profile' },
-            {
-                label: 'Sequence coordinates',
-                to: '/docs/concepts/data-model#aligned-sequences-and-reference-positions',
-            },
+            { label: 'Sequence coordinates', to: '/docs/reference/functions#sequence-functions' },
         ],
         answer: `default
   .filter(aminoAcidMutationProfile(distance:=2, sequenceName:='S', mutations:={
@@ -368,7 +359,7 @@ sample-US-001 | 2024-05-09 | JN.1.4       | California`,
         explanation:
             'Build a table of the 100 most recent German sequences and use map to copy the country into the place column. Build the same table for the USA with the division in the place column, then combine both tables with unionAll. Order the combined rows by date descending.',
         documentation: [
-            { label: 'Pipeline schemas', to: '/docs/concepts/data-model#queries-are-pipelines' },
+            { label: 'Pipeline schemas', to: '/docs/concepts/query-language#pipeline-operators' },
             { label: 'unionAll', to: '/docs/reference/query-language#union-all' },
         ],
         answer: `default

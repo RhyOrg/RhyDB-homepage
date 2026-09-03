@@ -1,4 +1,0 @@
-RhyDB version: 0.13.2
-RhyDB commit: 72cc8def353fe6dec0fe045c16fafea5b0a76099
-Release: https://github.com/GenSpectrum/LAPIS-SILO/releases/tag/v0.13.2
-WASM archive: https://github.com/GenSpectrum/LAPIS-SILO/releases/download/v0.13.2/rhydb-wasm-0.13.2.tar.gz

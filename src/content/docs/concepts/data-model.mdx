@@ -37,9 +37,17 @@ RhyDB supports the following types for stored columns:
             </tr>
             <tr>
                 <td>
-                    <code>int</code>
+                    <code>int32</code>
                 </td>
-                <td>Signed 32-bit whole numbers.</td>
+                <td>
+                    Signed 32-bit whole numbers. Also configurable under its alias <code>int</code>.
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>int64</code>
+                </td>
+                <td>Signed 64-bit whole numbers, for values beyond the 32-bit range.</td>
             </tr>
             <tr>
                 <td>

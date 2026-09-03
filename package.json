@@ -8,7 +8,6 @@
         "node": ">=24"
     },
     "scripts": {
-        "wasm:download": "mkdir -p .rhydb-wasm && wget -qO- https://github.com/GenSpectrum/LAPIS-SILO/releases/download/v0.13.2/rhydb-wasm-0.13.2.tar.gz | tar -xz -C .rhydb-wasm",
         "example-data": "node scripts/prepare-example-data.mjs",
         "predev:wasm": "cross-env PUBLIC_RHYDB_WASM_ENABLED=true node scripts/prepare-public.mjs",
         "dev:wasm": "cross-env PUBLIC_RHYDB_WASM_ENABLED=true astro dev",
@@ -34,6 +33,7 @@
         "@nightingale-elements/nightingale-manager": "^5.6.0",
         "@nightingale-elements/nightingale-msa": "^5.6.0",
         "@nightingale-elements/nightingale-navigation": "^5.6.0",
+        "@rhydb/rhydb-wasm": "0.14.1",
         "@uiw/react-codemirror": "^4.23.0",
         "@zip.js/zip.js": "^2.8.34",
         "astro": "^7.1.6",

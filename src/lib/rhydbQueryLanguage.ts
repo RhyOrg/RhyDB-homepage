@@ -80,7 +80,7 @@ const parser = StreamLanguage.define({
 
         if (stream.match(/^\d+(\.\d+)?/)) return 'number';
 
-        if (stream.match(':=') || stream.match('::') || stream.match(/^(&&|\|\||<=|>=|<>|[=<>!])/)) {
+        if (stream.match(':=') || stream.match('::') || stream.match(/^(&&|\|\||<=|>=|<>|[=<>!-])/)) {
             return 'operator';
         }
 

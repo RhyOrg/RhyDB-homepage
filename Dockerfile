@@ -7,8 +7,6 @@ RUN npm ci
 
 COPY . .
 
-RUN npm run wasm:download
-
 # Console and exercise targets are configurable at build time.
 ARG PUBLIC_RHYDB_DEFAULT_SERVER=https://gs-staging-1.int.genspectrum.org/open/v2/silo
 ARG PUBLIC_RHYDB_EXERCISE_SERVER=https://gs-staging-1.int.genspectrum.org/open/v2/silo

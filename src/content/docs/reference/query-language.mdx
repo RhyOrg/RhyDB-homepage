@@ -8,6 +8,7 @@ order: 4
 
 import Note from '../../../components/astro/Note.astro';
 import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
+import { withBase } from '../../../lib/paths';
 
 ## Query structure
 
@@ -103,12 +104,61 @@ Method syntax is equivalent to passing the value on the left as the first functi
 
 ## Operators
 
-Boolean expressions use `&&` (and), `||` (or), and `!` (not). Parentheses control grouping. Comparisons use `=`, `<>`, `<`, `<=`, `>`, and `>=`; their left-hand side must be a column.
+Boolean expressions use `&&` (and), `||` (or), and `!` (not). Parentheses control grouping.
+
+A comparison takes a column identifier on one side and a literal on the other. The column may be on either side, so `age > 30` and `30 < age` are the same filter.
+
+<div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+    <table className='table table-sm'>
+        <thead>
+            <tr>
+                <th>Operator</th>
+                <th>Meaning</th>
+                <th>Column types</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <code>=</code>
+                </td>
+                <td>equals</td>
+                <td>all</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&lt;&gt;</code>
+                </td>
+                <td>not equals</td>
+                <td>all</td>
+            </tr>
+            <tr>
+                <td>
+                    <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>
+                </td>
+                <td>ordering</td>
+                <td>int, float, date, and string (lexicographic)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
 ```saneql
 country = 'Germany' && age >= 18
 !(date < '2024-01-01'::date)
 ```
+
+A boolean column can serve as a predicate on its own. `default.filter(isHuman)` means `isHuman = true`, and `default.filter(!isHuman)` is its complement. Only boolean columns may be written this way; a bare reference to a column of another type is rejected.
+
+<Note title='Null values and comparisons'>
+    A null cell never matches a comparison, `<>` included, so `country <> 'Germany'` leaves out the rows whose
+    `country` is null. `!` is a set complement rather than SQL's `NOT`, so `!(country = 'Germany')` does return those
+    rows. Comparing against the `null` literal is an error; use{' '}
+    <a href={withBase('/docs/reference/functions#null')}>
+        <code>isNull()</code> or <code>isNotNull()</code>
+    </a>{' '}
+    to test for missing values.
+</Note>
 
 ## Pipeline operations
 
