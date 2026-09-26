@@ -20,6 +20,15 @@ default
 
 Method syntax is equivalent to passing the value on the left as the first function argument. Named arguments use `:=`. After a named argument, all remaining arguments must also be named.
 
+## Tables
+
+The table holding the sequences and their metadata is named `default`. Preprocessing adds further tables that are queried like any other table:
+
+- `reference_genomes` holds the reference sequences, one row per sequence, with the string columns `name`, `type` (`nucleotide` or `amino_acid`) and `sequence`.
+- A lineage column configured with `lineageIndexType: table` or `both` gets a lineage relation table named after the column. It holds one row per direct edge of the lineage tree, with the child in `lineage` and its direct parent in `parent` (null for roots), as well as `id`, `is_recombinant_edge` and `recombinant_clade_ancestor`.
+
+[`tables()`](#tables-function) lists the tables of an instance.
+
 ## Literals
 
 <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
@@ -163,8 +172,21 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
 ## Pipeline operations
 
 <ReferenceItem id='filter' name='filter(predicate)'>
-    <span slot='description'>Keep rows for which the predicate is true.</span>
-    {`default.filter(country = 'USA' && age >= 18)`}
+    <div slot='description'>
+        <p>
+            Keep the rows of the preceding result for which the predicate is true. A filter can follow any operation,
+            such as a <code>groupBy</code>, a <code>map</code> that derives the filtered column, a <code>join</code>, or{' '}
+            <code>schema()</code>.
+        </p>
+        <p className='mt-2'>
+            A filter that applies to the rows of a table, directly or through <code>project</code>, a deterministic{' '}
+            <code>orderBy</code> or <code>unionAll</code>, supports every predicate. On other results, a predicate can
+            combine comparisons, boolean columns, and <code>isNull()</code> with <code>&amp;&amp;</code> and{' '}
+            <code>||</code>.
+        </p>
+    </div>
+    {`default.filter(country = 'USA' && age >= 18)
+default.groupBy({count := count()}, {country}).filter(count > 1000)`}
 </ReferenceItem>
 
 <ReferenceItem id='group-by' name='groupBy(aggregates [, columns])'>
@@ -176,8 +198,16 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
 </ReferenceItem>
 
 <ReferenceItem id='project' name='project(fields)'>
-    <span slot='description'>Return only the columns in the given set.</span>
+    <span slot='description'>Return only the columns in the given set. At least one column must be kept.</span>
     {`default.project({primaryKey, country, date})`}
+</ReferenceItem>
+
+<ReferenceItem id='projectout' name='projectout(fields)'>
+    <span slot='description'>
+        Return all columns except the ones in the given set, in their original order. Every named column must exist, and
+        at least one column must remain.
+    </span>
+    {`default.projectout({main, unaligned_main})`}
 </ReferenceItem>
 
 <ReferenceItem id='map' name='map(expressions)'>
@@ -213,7 +243,8 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
         <p>
             Combine two pipelines by equality between columns. Multiple equalities may be joined with{' '}
             <code>&amp;&amp;</code>. The default type is <code>inner</code>. The two inputs must use disjoint column
-            names. Apply filters to an input pipeline because a <code>join</code> result cannot be filtered.
+            names. A filter after a <code>join</code> applies to the joined rows; apply sequence predicates such as{' '}
+            <code>hasMutation()</code> to an input pipeline instead.
         </p>
         <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
             <table className='table table-sm'>
@@ -307,9 +338,19 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
 
 <ReferenceItem id='schema' name='schema()'>
     <span slot='description'>
-        Describe the input schema without reading its rows. Returns <code>fieldName</code> and <code>type</code>.
+        Describe the schema of a table or of any pipeline result without reading its rows. Returns{' '}
+        <code>fieldName</code> and <code>type</code>.
     </span>
-    {`default.schema()`}
+    {`default.schema()
+default.groupBy({count := count()}, {country}).schema()`}
+</ReferenceItem>
+
+<ReferenceItem id='tables-function' name='tables()'>
+    <span slot='description'>
+        List the tables of the instance as rows with a single <code>tableName</code> column. It takes no arguments and
+        starts a pipeline instead of following a table.
+    </span>
+    {`tables()`}
 </ReferenceItem>
 
 ## Sequence aggregations
@@ -347,6 +388,32 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
     {`default.aminoAcidInsertions(sequenceNames := {S})`}
 </ReferenceItem>
 
+## Graph operations
+
+<ReferenceItem
+    id='transitive-closure'
+    name='transitiveClosure(input, from, to [, includeVertices := bool] [, startingFrom := {...}])'
+>
+    <div slot='description'>
+        <p>
+            Treat each input row as an edge from its <code>from</code> column to its <code>to</code> column, both of
+            type string, and return a <code>from</code> and <code>to</code> row for every pair connected by one or more
+            edges. Rows with a null vertex are ignored. <code>includeVertices := true</code> adds the pair{' '}
+            <code>(v, v)</code> for every vertex. <code>startingFrom</code>, a set of string literals, restricts the
+            result to paths that start at the given vertices. The row order is unspecified.
+        </p>
+        <p className='mt-2'>
+            On a lineage relation table, which lists each lineage with its parent, the closure from <code>parent</code>{' '}
+            to <code>lineage</code> pairs every lineage with each of its descendants. The example counts the sequences
+            of a lineage and all its sublineages.
+        </p>
+    </div>
+    {`pangoLineage
+  .transitiveClosure('parent', 'lineage', includeVertices := true, startingFrom := {'B.1.1.7'})
+  .join(default.map({lineageName := pangoLineage}).project({lineageName}), to = lineageName)
+  .groupBy({count := count()}, {from})`}
+</ReferenceItem>
+
 ## Phylogenetic operations
 
 <ReferenceItem id='mrca' name='mostRecentCommonAncestor(column [, printNodesNotInTree := bool])'>
@@ -362,4 +429,24 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
 >
     <span slot='description'>Return a Newick subtree spanning the filtered records.</span>
     {`default.filter(country = 'Germany').phyloSubtree('usherTree')`}
+</ReferenceItem>
+
+## Write statements
+
+<ReferenceItem id='insert-into' name='insertInto(query, table)'>
+    <div slot='description'>
+        <p>
+            Run a query and insert its rows into an existing table, given as a bare name or a string literal. Output
+            columns are matched to the target columns by name: every target column must be produced with a matching
+            type, and additional columns are ignored. Sequence columns cannot be inserted.
+        </p>
+        <p className='mt-2'>
+            <code>insertInto</code> must be the outermost operation of a query. It is sent to the{' '}
+            <a href={withBase('/docs/reference/http-api#post-adminquery')}>
+                <code>POST /admin/query</code>
+            </a>{' '}
+            endpoint, which saves the result as a new data version.
+        </p>
+    </div>
+    {`source.filter(country = 'Switzerland').project({primaryKey, country}).insertInto(archive)`}
 </ReferenceItem>

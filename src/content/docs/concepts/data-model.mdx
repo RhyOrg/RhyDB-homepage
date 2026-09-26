@@ -8,7 +8,9 @@ order: 3
 
 ## Tables, rows and columns
 
-A RhyDB database consists of tables. Each table has a schema that defines its columns and their types. Every row in the table follows that schema.
+A RhyDB database consists of tables. Each table has a schema that defines its columns and their types. Every row in the table follows that schema. A table can declare one column as its primary key, whose values then identify the rows uniquely; the primary key is optional.
+
+Besides the tables that hold the records, preprocessing creates a `reference_genomes` table with the reference sequences, and a lineage relation table for each lineage column that is configured to be materialized as a table.
 
 ## Column types
 
@@ -89,7 +91,7 @@ RhyDB supports the following types for stored columns:
 
 ## Indexes
 
-A bitmap index can be enabled for a string column and supports efficient equality and set-membership filters. Each aligned nucleotide and amino-acid sequence has built-in bitmap structures that index symbols by reference position. A lineage index augments an indexed string column with a configured directed acyclic graph of lineage relationships, enabling queries that include sublineages.
+A bitmap index can be enabled for a string column and supports efficient equality and set-membership filters. Each aligned nucleotide and amino-acid sequence has built-in bitmap structures that index symbols by reference position. A lineage index augments an indexed string column with a configured directed acyclic graph of lineage relationships, enabling queries that include sublineages. The same graph can also be materialized as a lineage relation table with one row per edge between a lineage and its parent, which queries can join and traverse with `transitiveClosure()`.
 
 ## Example schemas
 
@@ -137,7 +139,7 @@ records(
 )
 
 measles_alignment(
-  accesson: string,
+  accession: string,
   alignment: nucleotide sequence,
   N: amino-acid sequence,
   completeness: float,

@@ -1,6 +1,6 @@
 # RhyDB website
 
-The public homepage, documentation, exercises, and browser-based query Console for [RhyDB](https://github.com/GenSpectrum/LAPIS-SILO). Astro renders the site content to static HTML, while React islands provide the interactive Console and exercise query editors. The site uses TypeScript, Tailwind CSS, and daisyUI and has no backend of its own.
+The public homepage, documentation, exercises, and browser-based query Console for [RhyDB](https://github.com/RhyOrg/RhyDB). Astro renders the site content to static HTML, while React islands provide the interactive Console and exercise query editors. The site uses TypeScript, Tailwind CSS, and daisyUI and has no backend of its own.
 
 ## Site areas
 
@@ -39,7 +39,7 @@ Astro reads these variables at build time:
 | `PUBLIC_RHYDB_DEFAULT_SERVER`  | GenSpectrum staging RhyDB | Initial server shown by the Console. Visitors may connect another instance.          |
 | `PUBLIC_RHYDB_EXERCISE_SERVER` | GenSpectrum staging RhyDB | Fixed server used by exercises and reference answers. It is not editable in the UI.  |
 | `PUBLIC_RHYDB_WASM_ENABLED`    | `false`                   | Adds the opt-in browser-local RhyDB target. Requires cross-origin-isolation headers. |
-| `PUBLIC_BASE_PATH`             | `/`                       | Public base path, such as `/rhydb-console/` for a GitHub Pages project site.         |
+| `PUBLIC_BASE_PATH`             | `/`                       | Public base path, such as `/RhyDB-homepage/` for a GitHub Pages project site.        |
 
 Example:
 

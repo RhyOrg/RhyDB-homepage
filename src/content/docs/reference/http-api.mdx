@@ -1,12 +1,13 @@
 ---
 title: HTTP API reference
 description: Endpoints, request and response formats, headers, and errors.
-lead: A running RhyDB instance exposes health and information endpoints and accepts plain-text queries over HTTP.
+lead: A running RhyDB instance exposes health and information endpoints and accepts plain-text queries, and optionally write statements, over HTTP.
 section: Reference
 order: 6
 ---
 
 import Note from '../../../components/astro/Note.astro';
+import { withBase } from '../../../lib/paths';
 
 ## POST /query
 
@@ -39,13 +40,35 @@ curl -X POST \
   --output result.arrow
 ```
 
+## POST /admin/query
+
+Send an <a href={withBase('/docs/reference/query-language#insert-into')}>`insertInto`</a> write statement as a plain-text request body. RhyDB applies it to the most recent state in its data directory and saves the result as a new data version, which is served once the server has picked it up. A write that fails leaves the data version unchanged.
+
+```shell
+curl -X POST \
+  --data "source.filter(country = 'Switzerland').project({primaryKey, country}).insertInto(archive)" \
+  https://rhydb.example.org/admin/query
+```
+
+The JSON response reports the number of inserted rows, and its `data-version` header names the version the write produced:
+
+```json
+{ "insertedRows": 42 }
+```
+
+<Note title='Opt-in endpoint'>
+    The endpoint is only served when the instance sets `api.allowAdminEndpoint` to `true`; otherwise it returns `404`
+    and the instance is read-only. It has no authentication of its own, so a public instance that enables it must
+    restrict access to it, for example in its reverse proxy.
+</Note>
+
 ## GET /info
 
 Return information about the loaded database, including the RhyDB version and number of sequence records.
 
 ```json
 {
-    "version": "0.14.1",
+    "version": "0.14.4",
     "sequenceCount": 1000000,
     "horizontalBitmapsSize": 60000000,
     "verticalBitmapsSize": 58000000

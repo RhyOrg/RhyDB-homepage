@@ -42,6 +42,14 @@ import Note from '../../../components/astro/Note.astro';
                 </td>
             </tr>
             <tr>
+                <td>
+                    <code>SELECT *</code> except some columns
+                </td>
+                <td>
+                    <code>.projectout(&#123;fields&#125;)</code>
+                </td>
+            </tr>
+            <tr>
                 <td>computed column</td>
                 <td>
                     <code>.map(&#123;name := expression&#125;)</code>
@@ -53,6 +61,14 @@ import Note from '../../../components/astro/Note.astro';
                 </td>
                 <td>
                     <code>.groupBy(&#123;aggregates&#125;, &#123;columns&#125;)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>HAVING</code>
+                </td>
+                <td>
+                    <code>.filter(predicate)</code> after <code>.groupBy(...)</code>
                 </td>
             </tr>
             <tr>
@@ -85,6 +101,14 @@ import Note from '../../../components/astro/Note.astro';
                 </td>
                 <td>
                     <code>.unionAll(otherPipeline)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>INSERT INTO ... SELECT</code>
+                </td>
+                <td>
+                    <code>query.insertInto(table)</code>
                 </td>
             </tr>
         </tbody>

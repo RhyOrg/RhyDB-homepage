@@ -11,12 +11,13 @@ import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
 
 ## General functions
 
-<ReferenceItem id='at' name='at(column, position)'>
+<ReferenceItem id='at' name='at(column, position) / column[position]'>
     <span slot='description'>
         Return the character at a 1-based position. A position beyond the value returns an empty string; null remains
-        null.
+        null. <code>column[position]</code> is shorthand for <code>column.at(position)</code>.
     </span>
-    {`default.map({symbol := S.at(501)})`}
+    {`default.map({symbol := S.at(501)})
+default.map({symbol := S[501]})`}
 </ReferenceItem>
 
 <ReferenceItem id='iso-week' name='isoWeek(column)'>
