@@ -20,12 +20,14 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - id: pages
+              uses: actions/configure-pages@v5
             - name: Build and upload Astro site
               uses: withastro/action@v6
               with:
                   node-version: 24
               env:
-                  PUBLIC_BASE_PATH: /${{ github.event.repository.name }}/
+                  PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
                   # Optional: set a repository variable PUBLIC_RHYDB_DEFAULT_SERVER to override the default
                   # RhyDB server. Empty falls back to the built-in default (see src/config.ts).
                   PUBLIC_RHYDB_DEFAULT_SERVER: ${{ vars.PUBLIC_RHYDB_DEFAULT_SERVER }}
