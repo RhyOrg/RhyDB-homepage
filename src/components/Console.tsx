@@ -269,10 +269,15 @@ export default function Console() {
             {!connection && (
                 <div className='mt-4 alert border-info/25 bg-info/8 px-3 py-2 text-sm'>
                     <p className='text-base-content/65'>
-                        <span className='font-semibold text-base-content'>Runs in your browser.</span>{' '}
-                        {RHYDB_WASM_ENABLED
-                            ? 'Remote queries go directly to the selected RhyDB instance. Local files and processing stay on this device.'
-                            : 'Queries and results go only between your browser and the selected RhyDB instance; they are not sent to us.'}
+                        {RHYDB_WASM_ENABLED ? (
+                            <>
+                                <span className='font-semibold text-base-content'>Runs in your browser.</span> Remote
+                                queries go directly to the selected RhyDB instance. Local files and processing stay on
+                                this device.
+                            </>
+                        ) : (
+                            'Queries and results go only between your browser and the selected RhyDB instance. If you connect to your own instance, nothing will go to us.'
+                        )}
                     </p>
                 </div>
             )}
