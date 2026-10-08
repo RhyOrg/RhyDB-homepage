@@ -29,10 +29,10 @@ describe('buildConsoleShareUrl', () => {
         const url = buildConsoleShareUrl(
             'https://example.org/rhydb-console/console?old=value#section',
             'https://rhydb.example.org/api',
-            'default.limit(10)',
+            'data.limit(10)',
         );
         expect(url).toBe(
-            'https://example.org/rhydb-console/console#server=https%3A%2F%2Frhydb.example.org%2Fapi&query=default.limit%2810%29',
+            'https://example.org/rhydb-console/console#server=https%3A%2F%2Frhydb.example.org%2Fapi&query=data.limit%2810%29',
         );
     });
 
@@ -44,8 +44,8 @@ describe('buildConsoleShareUrl', () => {
 
 describe('buildConsoleShareHash', () => {
     it('encodes a server and query for an in-app console link', () => {
-        expect(buildConsoleShareHash('https://rhydb.example.org/api', "default.filter(country = 'Switzerland')")).toBe(
-            '#server=https%3A%2F%2Frhydb.example.org%2Fapi&query=default.filter%28country+%3D+%27Switzerland%27%29',
+        expect(buildConsoleShareHash('https://rhydb.example.org/api', "data.filter(country = 'Switzerland')")).toBe(
+            '#server=https%3A%2F%2Frhydb.example.org%2Fapi&query=data.filter%28country+%3D+%27Switzerland%27%29',
         );
     });
 });

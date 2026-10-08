@@ -11,11 +11,11 @@
 // without the comment and links to the Console with the comment included.
 export const landingPageQuery = `-- Ranks the most common combinations of pango lineage and S protein symbols at
 -- positions 69, 70 and 501 among sequences from Europe.
-default
+data
   .filter(region = 'Europe')
   .map({"S[69]" := S.at(69), "S[70]" := S.at(70), "S[501]" := S.at(501)})
-  .groupBy({count := count()}, {pangoLineage, "S[69]", "S[70]", "S[501]"})
-  .orderBy({count.desc()})
+  .group(by := {pangoLineage, "S[69]", "S[70]", "S[501]"}, aggs := {count := count()})
+  .order(by := {count.desc()})
   .limit(10)`;
 
 // Drops the leading `--` description, for places that show a query without it.
@@ -26,71 +26,71 @@ export function withoutLeadingComments(query: string) {
 export const sarsCov2RandomQueries = [
     landingPageQuery,
     `-- Finds sequence counts by country from 2025 carrying the S:69 deletion.
-default
+data
   .filter(
     date.between('2025-01-01'::date, '2025-12-31'::date)
     && aminoAcidEquals(position := 69, symbol := '-', sequenceName := 'S')
   )
-  .groupBy({count := count()}, {country})
-  .orderBy({count.desc(), country})
+  .group(by := {country}, aggs := {count := count()})
+  .order(by := {count.desc(), country})
   .limit(20)`,
     `-- Shows the 15 most recent sequences assigned to XEC or one of its sublineages.
-default
+data
   .filter(pangoLineage.lineage('XEC', includeSublineages := true))
   .project({date, country, pangoLineage, strain})
-  .orderBy({date.desc(), strain})
+  .order(by := {date.desc(), strain})
   .limit(15)`,
     `-- Compares monthly submission volumes from Germany and the USA during 2024.
-default
+data
   .filter(dateSubmittedYear = 2024 && country.in({'Germany', 'USA'}))
-  .groupBy({count := count()}, {country, dateSubmittedMonth})
-  .orderBy({dateSubmittedMonth, country})
+  .group(by := {country, dateSubmittedMonth}, aggs := {count := count()})
+  .order(by := {dateSubmittedMonth, country})
   .limit(30)`,
     `-- Draws a reproducible sample of ten African sequences collected during 2023.
-default
+data
   .filter(region = 'Africa' && date.between('2023-01-01'::date, '2023-12-31'::date))
   .randomize(seed := 2025)
   .project({strain, date, country, pangoLineage})
   .limit(10)`,
     `-- Ranks the most common Nextstrain clades among sequences from Japan in 2023.
-default
+data
   .filter(
     country = 'Japan'
     && date.between('2023-01-01'::date, '2023-12-31'::date)
     && isNotNull(nextstrainClade)
   )
-  .groupBy({count := count()}, {nextstrainClade})
-  .orderBy({count.desc(), nextstrainClade})
+  .group(by := {nextstrainClade}, aggs := {count := count()})
+  .order(by := {count.desc(), nextstrainClade})
   .limit(15)`,
     `-- Locates the Swiss BA.5.1 sequences in the UShER phylogeny by reporting the node
 -- that is their most recent common ancestor.
-default
+data
   .filter(country = 'Switzerland' && pangoLineage.lineage('BA.5.1', includeSublineages := true))
   .mostRecentCommonAncestor('usherTree')`,
     `-- Summarizes common N-protein changes in US sequences collected in January 2022.
-default
+data
   .filter(country = 'USA' && date.between('2022-01-01'::date, '2022-01-31'::date))
   .aminoAcidMutations(minProportion := 0.05, sequenceNames := {N})
-  .orderBy({count.desc(), position})
+  .order(by := {count.desc(), position})
   .limit(15)`,
     `-- Lists the animal hosts other than humans that SARS-CoV-2 sequences were sampled from.
-default
+data
   .filter(isNotNull(host) && host <> 'Homo sapiens')
-  .groupBy({count := count()}, {host})
-  .orderBy({count.desc(), host})
+  .group(by := {host}, aggs := {count := count()})
+  .order(by := {count.desc(), host})
   .limit(15)`,
     `-- Lists the most common nucleotide insertions among sequences from Switzerland.
-default
+data
   .filter(country = 'Switzerland')
   .insertions(sequenceNames := {main})
-  .orderBy({count.desc(), position})
+  .order(by := {count.desc(), position})
   .limit(15)`,
     `-- Counts the near-complete genomes (at least 99% Nextclade coverage) that were
 -- submitted in 2025, broken down by region.
-default
+data
   .filter(nextcladeCoverage >= 0.99 && dateSubmittedYear = 2025)
-  .groupBy({count := count()}, {region})
-  .orderBy({count.desc(), region})
+  .group(by := {region}, aggs := {count := count()})
+  .order(by := {count.desc(), region})
   .limit(10)`,
 ] as const;
 

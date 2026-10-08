@@ -17,7 +17,7 @@ describe('sarsCov2RandomQueries', () => {
             const commentCount = lines.findIndex((line) => !line.startsWith('--'));
             expect(commentCount).toBeGreaterThanOrEqual(1);
             expect(commentCount).toBeLessThanOrEqual(2);
-            expect(lines[commentCount]).toBe('default');
+            expect(lines[commentCount]).toBe('data');
         }
     });
 
@@ -31,11 +31,11 @@ describe('sarsCov2RandomQueries', () => {
     });
 
     it('keeps the landing page hero query unchanged once its comment is dropped', () => {
-        expect(withoutLeadingComments(landingPageQuery)).toBe(`default
+        expect(withoutLeadingComments(landingPageQuery)).toBe(`data
   .filter(region = 'Europe')
   .map({"S[69]" := S.at(69), "S[70]" := S.at(70), "S[501]" := S.at(501)})
-  .groupBy({count := count()}, {pangoLineage, "S[69]", "S[70]", "S[501]"})
-  .orderBy({count.desc()})
+  .group(by := {pangoLineage, "S[69]", "S[70]", "S[501]"}, aggs := {count := count()})
+  .order(by := {count.desc()})
   .limit(10)`);
     });
 

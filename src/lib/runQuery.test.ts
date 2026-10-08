@@ -28,7 +28,7 @@ describe('runBounded', () => {
         const fetchMock = vi.fn(async () => response({ ok: true, body: '{"count":5}\n', dataVersion: '42' }));
         vi.stubGlobal('fetch', fetchMock);
 
-        const result = await runBounded('http://rhydb', 'default.project({strain}).limit(20)');
+        const result = await runBounded('http://rhydb', 'data.project({strain}).limit(20)');
 
         expect(result.rows).toEqual([{ count: 5 }]);
         expect(result.dataVersion).toBe('42');
@@ -46,7 +46,7 @@ describe('runBounded', () => {
         );
         vi.stubGlobal('fetch', fetchMock);
 
-        const raw = 'default.groupBy({count:=count()})';
+        const raw = 'data.group(by:={}, aggs:={count:=count()})';
         await expect(runBounded('http://rhydb', raw)).rejects.toThrow('HTTP 400');
 
         expect(fetchMock).toHaveBeenCalledTimes(1);

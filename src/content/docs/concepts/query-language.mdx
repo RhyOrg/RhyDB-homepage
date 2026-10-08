@@ -29,8 +29,8 @@ A query can be written as a pipeline of operators chained with `expr.method(arg1
 ```saneql
 measles
   .filter(country = 'Switzerland')
-  .groupBy({count := count()}, {lineage})
-  .orderBy({count.desc()})
+  .group(by := {lineage}, aggs := {count := count()})
+  .order(by := {count.desc()})
 ```
 
 ### Functional-style syntax
@@ -38,11 +38,11 @@ measles
 The same query can be written as nested function calls such as `method(expr, arg1)`. The example above can be written in functional-style syntax as:
 
 ```saneql
-orderBy(
-  groupBy(
+order(
+  group(
     filter(measles, country = 'Switzerland'),
-    {count := count()},
-    {lineage}
+    {lineage},
+    {count := count()}
   ),
   {desc(count)}
 )
@@ -50,7 +50,7 @@ orderBy(
 
 ### Operator arguments
 
-SaneQL operator signatures distinguish table, expression and symbol arguments, as well as lists of expressions or symbols. A table argument supplies rows and columns to an operator; an expression is an unevaluated term such as a filter predicate; and a symbol names a column, relation or operator. RhyDB uses set literals for arguments such as the columns of `project` or `groupBy`. Record literals represent named expressions such as `{count := count()}`. Arguments can be positional or named with `:=`; after the first named argument, all remaining arguments must also be named.
+SaneQL operator signatures distinguish table, expression and symbol arguments, as well as lists of expressions or symbols. A table argument supplies rows and columns to an operator; an expression is an unevaluated term such as a filter predicate; and a symbol names a column, relation or operator. RhyDB uses set literals for arguments such as the columns of `project` or the grouping columns of `group`. Record literals represent named expressions such as `{count := count()}`. Arguments can be positional or named with `:=`; after the first named argument, all remaining arguments must also be named.
 
 ## Boolean and comparison operators
 

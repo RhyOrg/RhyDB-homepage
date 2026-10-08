@@ -33,7 +33,7 @@
         "@nightingale-elements/nightingale-manager": "^5.6.0",
         "@nightingale-elements/nightingale-msa": "^5.6.0",
         "@nightingale-elements/nightingale-navigation": "^5.6.0",
-        "@rhydb/rhydb-wasm": "0.14.4",
+        "@rhydb/rhydb-wasm": "0.15.0",
         "@uiw/react-codemirror": "^4.23.0",
         "@zip.js/zip.js": "^2.8.34",
         "astro": "^7.1.6",

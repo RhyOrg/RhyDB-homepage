@@ -16,8 +16,8 @@ import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
         Return the character at a 1-based position. A position beyond the value returns an empty string; null remains
         null. <code>column[position]</code> is shorthand for <code>column.at(position)</code>.
     </span>
-    {`default.map({symbol := S.at(501)})
-default.map({symbol := S[501]})`}
+    {`data.map({symbol := S.at(501)})
+data.map({symbol := S[501]})`}
 </ReferenceItem>
 
 <ReferenceItem id='iso-week' name='isoWeek(column)'>
@@ -29,7 +29,7 @@ default.map({symbol := S[501]})`}
             turn of the year: <code>2021-01-01</code> falls into <code>2020-W53</code>.
         </p>
     </div>
-    {`default.map({week := date.isoWeek()})`}
+    {`data.map({week := date.isoWeek()})`}
 </ReferenceItem>
 
 <ReferenceItem id='between' name='between(column, from, to)'>
@@ -39,8 +39,13 @@ age.between(18, null)`}
 </ReferenceItem>
 
 <ReferenceItem id='in' name='in(column, {values})'>
-    <span slot='description'>Test whether a string column equals one of the values in a set.</span>
-    {`country.in({'Germany', 'France', 'Italy'})`}
+    <span slot='description'>
+        Test whether a column equals one of the values in a set. String, integer, float, date, and boolean columns are
+        supported, and every value must be a literal of the column's type. An empty set matches no rows.
+    </span>
+    {`country.in({'Germany', 'France', 'Italy'})
+age.in({30, 40})
+date.in({'2021-01-01'::date, '2021-06-01'::date})`}
 </ReferenceItem>
 
 <ReferenceItem id='null' name='isNull(column) / isNotNull(column)'>

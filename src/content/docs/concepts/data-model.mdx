@@ -10,7 +10,7 @@ order: 3
 
 A RhyDB database consists of tables. Each table has a schema that defines its columns and their types. Every row in the table follows that schema. A table can declare one column as its primary key, whose values then identify the rows uniquely; the primary key is optional.
 
-Besides the tables that hold the records, preprocessing creates a `reference_genomes` table with the reference sequences, and a lineage relation table for each lineage column that is configured to be materialized as a table.
+Besides the tables that hold the records, every database contains the built-in `reference_genomes` table with the reference sequences, and preprocessing creates a lineage relation table for each lineage column that is configured to be materialized as a table. Further tables can be created with `createTable()`.
 
 ## Column types
 

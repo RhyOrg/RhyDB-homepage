@@ -13,18 +13,18 @@ import { withBase } from '../../../lib/paths';
 ## Query structure
 
 ```saneql
-default
+data
   .filter(country = 'Switzerland')
-  .groupBy({count := count()}, {pangoLineage})
+  .group(by := {pangoLineage}, aggs := {count := count()})
 ```
 
 Method syntax is equivalent to passing the value on the left as the first function argument. Named arguments use `:=`. After a named argument, all remaining arguments must also be named.
 
 ## Tables
 
-The table holding the sequences and their metadata is named `default`. Preprocessing adds further tables that are queried like any other table:
+The table holding the sequences and their metadata is named `data`. Further tables are queried like any other table:
 
-- `reference_genomes` holds the reference sequences, one row per sequence, with the string columns `name`, `type` (`nucleotide` or `amino_acid`) and `sequence`.
+- `reference_genomes` is a built-in table that every database contains. It holds the reference sequences, one row per sequence, with the string columns `name`, `type` (`nucleotide` or `amino_acid`) and `sequence`.
 - A lineage column configured with `lineageIndexType: table` or `both` gets a lineage relation table named after the column. It holds one row per direct edge of the lineage tree, with the child in `lineage` and its direct parent in `parent` (null for roots), as well as `id`, `is_recombinant_edge` and `recombinant_clade_ancestor`.
 
 [`tables()`](#tables-function) lists the tables of an instance.
@@ -157,7 +157,7 @@ country = 'Germany' && age >= 18
 !(date < '2024-01-01'::date)
 ```
 
-A boolean column can serve as a predicate on its own. `default.filter(isHuman)` means `isHuman = true`, and `default.filter(!isHuman)` is its complement. Only boolean columns may be written this way; a bare reference to a column of another type is rejected.
+A boolean column can serve as a predicate on its own. `data.filter(isHuman)` means `isHuman = true`, and `data.filter(!isHuman)` is its complement. Only boolean columns may be written this way; a bare reference to a column of another type is rejected.
 
 <Note title='Null values and comparisons'>
     A null cell never matches a comparison, `<>` included, so `country <> 'Germany'` leaves out the rows whose
@@ -171,43 +171,76 @@ A boolean column can serve as a predicate on its own. `default.filter(isHuman)` 
 
 ## Pipeline operations
 
-<ReferenceItem id='filter' name='filter(predicate)'>
+<ReferenceItem id='filter' name='filter(condition)'>
     <div slot='description'>
         <p>
-            Keep the rows of the preceding result for which the predicate is true. A filter can follow any operation,
-            such as a <code>groupBy</code>, a <code>map</code> that derives the filtered column, a <code>join</code>, or{' '}
+            Keep the rows of the preceding result for which the condition is true. A filter can follow any operation,
+            such as a <code>group</code>, a <code>map</code> that derives the filtered column, a <code>join</code>, or{' '}
             <code>schema()</code>.
         </p>
         <p className='mt-2'>
             A filter that applies to the rows of a table, directly or through <code>project</code>, a deterministic{' '}
-            <code>orderBy</code> or <code>unionAll</code>, supports every predicate. On other results, a predicate can
+            <code>order</code> or <code>unionall</code>, supports every predicate. On other results, a predicate can
             combine comparisons, boolean columns, and <code>isNull()</code> with <code>&amp;&amp;</code> and{' '}
             <code>||</code>.
         </p>
     </div>
-    {`default.filter(country = 'USA' && age >= 18)
-default.groupBy({count := count()}, {country}).filter(count > 1000)`}
+    {`data.filter(country = 'USA' && age >= 18)
+data.group(by := {country}, aggs := {count := count()}).filter(count > 1000)`}
 </ReferenceItem>
 
-<ReferenceItem id='group-by' name='groupBy(aggregates [, columns])'>
-    <span slot='description'>
-        Aggregate rows. The first argument is a record of aggregates; the optional second argument is a set of grouping
-        columns. Currently, <code>count()</code> is the supported aggregate.
-    </span>
-    {`default.groupBy({count := count()}, {country, pangoLineage})`}
+<ReferenceItem id='group' name='group(by, aggs)'>
+    <div slot='description'>
+        <p>
+            Aggregate rows. <code>by</code> is the set of grouping columns, and the empty set <code>&#123;&#125;</code>{' '}
+            aggregates all rows into a single group. <code>aggs</code> is a record of named aggregates. The result has
+            one row per group with the grouping columns and the aggregates. Rows with a null grouping value form their
+            own group.
+        </p>
+        <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+            <table className='table table-sm'>
+                <thead>
+                    <tr>
+                        <th>Aggregate</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <code>count()</code>
+                        </td>
+                        <td>The number of rows in the group, as an int64.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>sum(column)</code>
+                        </td>
+                        <td>
+                            The sum of a numeric column. Integer columns sum to an int64 and float columns to a float.
+                            Null values are skipped; a group without any non-null value sums to null.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {`data.group(by := {}, aggs := {count := count()})
+data.group(by := {country, pangoLineage}, aggs := {count := count()})
+data.group(by := {country}, aggs := {count := count(), totalAge := sum(age)})`}
 </ReferenceItem>
 
-<ReferenceItem id='project' name='project(fields)'>
+<ReferenceItem id='project' name='project(expressions)'>
     <span slot='description'>Return only the columns in the given set. At least one column must be kept.</span>
-    {`default.project({primaryKey, country, date})`}
+    {`data.project({primaryKey, country, date})`}
 </ReferenceItem>
 
-<ReferenceItem id='projectout' name='projectout(fields)'>
+<ReferenceItem id='projectout' name='projectout(remove)'>
     <span slot='description'>
         Return all columns except the ones in the given set, in their original order. Every named column must exist, and
         at least one column must remain.
     </span>
-    {`default.projectout({main, unaligned_main})`}
+    {`data.projectout({main, unaligned_main})`}
 </ReferenceItem>
 
 <ReferenceItem id='map' name='map(expressions)'>
@@ -215,27 +248,29 @@ default.groupBy({count := count()}, {country}).filter(count > 1000)`}
         Add or replace columns using name-and-value assignments. Values may be literals, columns, or non-boolean scalar
         functions.
     </span>
-    {`default.map({cohort := 'A', copiedCountry := country, week := date.isoWeek()})`}
+    {`data.map({cohort := 'A', copiedCountry := country, week := date.isoWeek()})`}
 </ReferenceItem>
 
-<ReferenceItem id='order-by' name='orderBy(fields)'>
-    <span slot='description'>Sort by bare ascending fields or asc/desc expressions.</span>
-    {`default.orderBy({date.desc(), primaryKey})`}
+<ReferenceItem id='order' name='order(by)'>
+    <span slot='description'>
+        Sort by a set of keys, each a bare column name (ascending) or an asc/desc expression.
+    </span>
+    {`data.order(by := {date.desc(), primaryKey})`}
 </ReferenceItem>
 
 <ReferenceItem id='limit' name='limit(count)'>
     <span slot='description'>Return at most count rows.</span>
-    {`default.limit(100)`}
+    {`data.limit(100)`}
 </ReferenceItem>
 
 <ReferenceItem id='offset' name='offset(count)'>
     <span slot='description'>Skip count rows. Use a deterministic order when paginating.</span>
-    {`default.orderBy({primaryKey}).offset(100).limit(100)`}
+    {`data.order(by := {primaryKey}).offset(100).limit(100)`}
 </ReferenceItem>
 
 <ReferenceItem id='randomize' name='randomize([seed := n])'>
     <span slot='description'>Return rows in random order. A seed makes the order reproducible.</span>
-    {`default.randomize(seed := 42).limit(10)`}
+    {`data.randomize(seed := 42).limit(10)`}
 </ReferenceItem>
 
 <ReferenceItem id='join' name='join(left, right, on [, type := kind])'>
@@ -316,11 +351,11 @@ default.groupBy({count := count()}, {country}).filter(count > 1000)`}
             </table>
         </div>
     </div>
-    {`default.groupBy({countWorld := count()}, {pangoLineage})
+    {`data.group(by := {pangoLineage}, aggs := {countWorld := count()})
   .join(
-    default
+    data
       .filter(country = 'Spain')
-      .groupBy({countSpain := count()}, {pangoLineage})
+      .group(by := {pangoLineage}, aggs := {countSpain := count()})
       .map({pangoLineage2 := pangoLineage})
       .project({pangoLineage2, countSpain}),
     pangoLineage = pangoLineage2,
@@ -328,12 +363,12 @@ default.groupBy({count := count()}, {country}).filter(count > 1000)`}
   )`}
 </ReferenceItem>
 
-<ReferenceItem id='union-all' name='unionAll(left, right)'>
+<ReferenceItem id='unionall' name='unionall(left, right)'>
     <span slot='description'>
         Concatenate two results with identical column names, types, and order. Duplicate rows are retained.
     </span>
-    {`default.filter(country = 'Germany').project({country})
-  .unionAll(default.filter(country = 'France').project({country}))`}
+    {`data.filter(country = 'Germany').project({country})
+  .unionall(data.filter(country = 'France').project({country}))`}
 </ReferenceItem>
 
 <ReferenceItem id='schema' name='schema()'>
@@ -341,8 +376,8 @@ default.groupBy({count := count()}, {country}).filter(count > 1000)`}
         Describe the schema of a table or of any pipeline result without reading its rows. Returns{' '}
         <code>fieldName</code> and <code>type</code>.
     </span>
-    {`default.schema()
-default.groupBy({count := count()}, {country}).schema()`}
+    {`data.schema()
+data.group(by := {country}, aggs := {count := count()}).schema()`}
 </ReferenceItem>
 
 <ReferenceItem id='tables-function' name='tables()'>
@@ -365,27 +400,27 @@ default.groupBy({count := count()}, {country}).schema()`}
         Aggregate nucleotide substitutions and deletions above a frequency threshold. Returns source and observed
         symbols, position, sequence name, proportion, coverage, and count.
     </span>
-    {`default.filter(country = 'Switzerland')
+    {`data.filter(country = 'Switzerland')
   .mutations(minProportion := 0.05, sequenceNames := {main})`}
 </ReferenceItem>
 
 <ReferenceItem id='amino-acid-mutations' name='aminoAcidMutations(minProportion := p [, ...])'>
     <span slot='description'>Aggregate amino-acid substitutions and deletions above a frequency threshold.</span>
-    {`default.aminoAcidMutations(minProportion := 0.1, sequenceNames := {S})`}
+    {`data.aminoAcidMutations(minProportion := 0.1, sequenceNames := {S})`}
 </ReferenceItem>
 
 <ReferenceItem id='insertions' name='insertions([sequenceNames := {...}])'>
     <span slot='description'>
         Aggregate every nucleotide insertion in the input rows by sequence, position, and inserted symbols.
     </span>
-    {`default.insertions(sequenceNames := {main})`}
+    {`data.insertions(sequenceNames := {main})`}
 </ReferenceItem>
 
 <ReferenceItem id='amino-acid-insertions' name='aminoAcidInsertions([sequenceNames := {...}])'>
     <span slot='description'>
         Aggregate every amino-acid insertion in the input rows by sequence, position, and inserted symbols.
     </span>
-    {`default.aminoAcidInsertions(sequenceNames := {S})`}
+    {`data.aminoAcidInsertions(sequenceNames := {S})`}
 </ReferenceItem>
 
 ## Graph operations
@@ -397,10 +432,11 @@ default.groupBy({count := count()}, {country}).schema()`}
     <div slot='description'>
         <p>
             Treat each input row as an edge from its <code>from</code> column to its <code>to</code> column, both of
-            type string, and return a <code>from</code> and <code>to</code> row for every pair connected by one or more
-            edges. Rows with a null vertex are ignored. <code>includeVertices := true</code> adds the pair{' '}
-            <code>(v, v)</code> for every vertex. <code>startingFrom</code>, a set of string literals, restricts the
-            result to paths that start at the given vertices. The row order is unspecified.
+            type string and written as column names, and return a <code>from</code> and <code>to</code> row for every
+            pair connected by one or more edges. Rows with a null vertex are ignored.{' '}
+            <code>includeVertices := true</code> adds the pair <code>(v, v)</code> for every vertex.{' '}
+            <code>startingFrom</code>, a set of string literals, restricts the result to paths that start at the given
+            vertices. The row order is unspecified.
         </p>
         <p className='mt-2'>
             On a lineage relation table, which lists each lineage with its parent, the closure from <code>parent</code>{' '}
@@ -409,9 +445,9 @@ default.groupBy({count := count()}, {country}).schema()`}
         </p>
     </div>
     {`pangoLineage
-  .transitiveClosure('parent', 'lineage', includeVertices := true, startingFrom := {'B.1.1.7'})
-  .join(default.map({lineageName := pangoLineage}).project({lineageName}), to = lineageName)
-  .groupBy({count := count()}, {from})`}
+  .transitiveClosure(parent, lineage, includeVertices := true, startingFrom := {'B.1.1.7'})
+  .join(data.map({lineageName := pangoLineage}).project({lineageName}), to = lineageName)
+  .group(by := {from}, aggs := {count := count()})`}
 </ReferenceItem>
 
 ## Phylogenetic operations
@@ -420,7 +456,7 @@ default.groupBy({count := count()}, {country}).schema()`}
     <span slot='description'>
         Find the most recent common ancestor of the filtered records in a configured phylogenetic-tree column.
     </span>
-    {`default.filter(country = 'Germany').mostRecentCommonAncestor('usherTree')`}
+    {`data.filter(country = 'Germany').mostRecentCommonAncestor('usherTree')`}
 </ReferenceItem>
 
 <ReferenceItem
@@ -428,7 +464,7 @@ default.groupBy({count := count()}, {country}).schema()`}
     name='phyloSubtree(column [, printNodesNotInTree := bool] [, contractUnaryNodes := bool])'
 >
     <span slot='description'>Return a Newick subtree spanning the filtered records.</span>
-    {`default.filter(country = 'Germany').phyloSubtree('usherTree')`}
+    {`data.filter(country = 'Germany').phyloSubtree('usherTree')`}
 </ReferenceItem>
 
 ## Write statements
@@ -436,9 +472,9 @@ default.groupBy({count := count()}, {country}).schema()`}
 <ReferenceItem id='insert-into' name='insertInto(query, table)'>
     <div slot='description'>
         <p>
-            Run a query and insert its rows into an existing table, given as a bare name or a string literal. Output
-            columns are matched to the target columns by name: every target column must be produced with a matching
-            type, and additional columns are ignored. Sequence columns cannot be inserted.
+            Run a query and insert its rows into an existing table, given by its name. Output columns are matched to the
+            target columns by name: every target column must be produced with a matching type, and additional columns
+            are ignored. Sequence columns cannot be inserted.
         </p>
         <p className='mt-2'>
             <code>insertInto</code> must be the outermost operation of a query. It is sent to the{' '}
@@ -449,4 +485,120 @@ default.groupBy({count := count()}, {country}).schema()`}
         </p>
     </div>
     {`source.filter(country = 'Switzerland').project({primaryKey, country}).insertInto(archive)`}
+</ReferenceItem>
+
+<ReferenceItem id='create-table' name='createTable(table, columns [, primaryKey := column])'>
+    <div slot='description'>
+        <p>
+            Create a new, empty table. <code>table</code> is a name made of letters, digits, <code>_</code> and{' '}
+            <code>-</code> that no existing table uses, built-in tables included, and is neither{' '}
+            <code>database_schema</code> nor <code>data_version</code>. <code>columns</code> is a record that maps each
+            column name to its type. A type is written as a bare name, such as <code>int</code>, or with named options,
+            such as <code>string(generateIndex := true)</code>. Column names that are not plain identifiers are written
+            as double-quoted identifiers, such as <code>"S:ORF1a"</code>. The optional <code>primaryKey</code> names a
+            string column without an index.
+        </p>
+        <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+            <table className='table table-sm'>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Options</th>
+                        <th>Column</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <code>string</code>
+                        </td>
+                        <td>
+                            <code>generateIndex := bool</code>
+                        </td>
+                        <td>String; dictionary-encoded with a bitmap index when indexed</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>int</code> / <code>int32</code>, <code>int64</code>
+                        </td>
+                        <td></td>
+                        <td>32-bit or 64-bit integer</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>float</code>
+                        </td>
+                        <td></td>
+                        <td>Floating-point number</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>boolean</code>
+                        </td>
+                        <td></td>
+                        <td>Boolean</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>date</code>
+                        </td>
+                        <td></td>
+                        <td>Date</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>nucleotideSequence</code>
+                        </td>
+                        <td>
+                            <code>reference := name</code> (required)
+                        </td>
+                        <td>Aligned nucleotide sequence</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>aminoAcidSequence</code>
+                        </td>
+                        <td>
+                            <code>reference := name</code> (required)
+                        </td>
+                        <td>Aligned amino-acid sequence</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>zstdCompressedString</code>
+                        </td>
+                        <td>
+                            <code>dictionary := query</code> (required)
+                        </td>
+                        <td>String compressed with a zstd dictionary, such as an unaligned sequence</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>
+            A sequence column takes its reference from the row of <code>reference_genomes</code> with the given{' '}
+            <code>name</code> and a matching <code>type</code>. The <code>dictionary</code> query of a{' '}
+            <code>zstdCompressedString</code> column must return exactly one row with one string column, usually a
+            reference sequence. References and dictionaries are copied into the new table when it is created. Lineage
+            indexes and phylogenetic-tree columns cannot be declared with <code>createTable</code>.
+        </p>
+        <p className='mt-2'>
+            Like <code>insertInto</code>, <code>createTable</code> must be the whole query and is sent to the{' '}
+            <a href={withBase('/docs/reference/http-api#post-adminquery')}>
+                <code>POST /admin/query</code>
+            </a>{' '}
+            endpoint. It returns a single <code>createdTable</code> row instead of table rows.
+        </p>
+    </div>
+    {`createTable(covid, {
+  primaryKey := string,
+  country := string(generateIndex := true),
+  age := int,
+  date := date,
+  main := nucleotideSequence(reference := main),
+  "S" := aminoAcidSequence(reference := "S"),
+  unaligned_main := zstdCompressedString(
+    dictionary := reference_genomes.filter(name = 'main' && type = 'nucleotide').project({sequence})
+  )
+}, primaryKey := primaryKey)`}
 </ReferenceItem>

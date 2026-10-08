@@ -17,7 +17,7 @@ Send the query as a plain-text request body. NDJSON is the default response form
 curl -X POST \
   -H 'Content-Type: text/plain' \
   -H 'Accept: application/x-ndjson' \
-  --data "default.groupBy({count := count()})" \
+  --data "data.group(by := {}, aggs := {count := count()})" \
   https://rhydb.example.org/query
 ```
 
@@ -35,14 +35,14 @@ Send `Accept: application/vnd.apache.arrow.stream` to receive an Apache Arrow IP
 curl -X POST \
   -H 'Content-Type: text/plain' \
   -H 'Accept: application/vnd.apache.arrow.stream' \
-  --data 'default.limit(100)' \
+  --data 'data.limit(100)' \
   https://rhydb.example.org/query \
   --output result.arrow
 ```
 
 ## POST /admin/query
 
-Send an <a href={withBase('/docs/reference/query-language#insert-into')}>`insertInto`</a> write statement as a plain-text request body. RhyDB applies it to the most recent state in its data directory and saves the result as a new data version, which is served once the server has picked it up. A write that fails leaves the data version unchanged.
+Send an <a href={withBase('/docs/reference/query-language#insert-into')}>`insertInto`</a> or <a href={withBase('/docs/reference/query-language#create-table')}>`createTable`</a> write statement as a plain-text request body. RhyDB applies it to the most recent state in its data directory and saves the result as a new data version, which is served once the server has picked it up. A write that fails leaves the data version unchanged.
 
 ```shell
 curl -X POST \
@@ -50,10 +50,16 @@ curl -X POST \
   https://rhydb.example.org/admin/query
 ```
 
-The JSON response reports the number of inserted rows, and its `data-version` header names the version the write produced:
+The JSON response summarizes the write, and its `data-version` header names the version the write produced. `insertInto` reports the number of inserted rows:
 
 ```json
 { "insertedRows": 42 }
+```
+
+`createTable` reports the name of the created table:
+
+```json
+{ "createdTable": "archive" }
 ```
 
 <Note title='Opt-in endpoint'>
@@ -68,7 +74,7 @@ Return information about the loaded database, including the RhyDB version and nu
 
 ```json
 {
-    "version": "0.14.4",
+    "version": "0.15.0",
     "sequenceCount": 1000000,
     "horizontalBitmapsSize": 60000000,
     "verticalBitmapsSize": 58000000

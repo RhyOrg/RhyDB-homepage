@@ -7,7 +7,7 @@ The public homepage, documentation, exercises, and browser-based query Console f
 - `/` introduces RhyDB, its use cases, and the available learning and query tools.
 - `/docs` explains RhyDB's data and query model and provides the query-language and HTTP API references.
 - `/exercises` teaches the query language through tasks on a fixed SARS-CoV-2 staging dataset. Exercise and reference queries always use the configured exercise server.
-- `/console` connects to a listed public RhyDB instance or a browser-accessible custom URL, displays `/info` and `default.schema()`, runs queries, and renders the results. Deployments may also enable browser-local RhyDB for preprocessing and querying files that remain on the visitor's device.
+- `/console` connects to a listed public RhyDB instance or a browser-accessible custom URL, displays `/info` and `data.schema()`, runs queries, and renders the results. Deployments may also enable browser-local RhyDB for preprocessing and querying files that remain on the visitor's device.
 
 The Console sends requests directly from the visitor's browser. The target RhyDB instance must be reachable from that browser and allow the site's origin through its CORS policy. The site does not collect credentials or proxy requests. Shared Console links store the server and query in the URL fragment, which is not sent to the static site host.
 

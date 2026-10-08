@@ -89,7 +89,7 @@ export default function Console() {
         const request = ++schemaRequest.current;
         setSchema({ status: 'loading', rows: [], error: null });
         try {
-            const result = await target.run('default.schema()');
+            const result = await target.run('data.schema()');
             if (request !== schemaRequest.current) return;
             setSchema({ status: 'ready', rows: result.rows, error: null });
         } catch (error) {

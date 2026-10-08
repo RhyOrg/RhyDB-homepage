@@ -30,7 +30,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>WHERE</code>
                 </td>
                 <td>
-                    <code>.filter(predicate)</code>
+                    <code>.filter(condition)</code>
                 </td>
             </tr>
             <tr>
@@ -38,7 +38,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>SELECT</code> columns
                 </td>
                 <td>
-                    <code>.project(&#123;fields&#125;)</code>
+                    <code>.project(&#123;columns&#125;)</code>
                 </td>
             </tr>
             <tr>
@@ -46,7 +46,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>SELECT *</code> except some columns
                 </td>
                 <td>
-                    <code>.projectout(&#123;fields&#125;)</code>
+                    <code>.projectout(&#123;columns&#125;)</code>
                 </td>
             </tr>
             <tr>
@@ -60,7 +60,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>GROUP BY</code>
                 </td>
                 <td>
-                    <code>.groupBy(&#123;aggregates&#125;, &#123;columns&#125;)</code>
+                    <code>.group(by := &#123;columns&#125;, aggs := &#123;aggregates&#125;)</code>
                 </td>
             </tr>
             <tr>
@@ -68,7 +68,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>HAVING</code>
                 </td>
                 <td>
-                    <code>.filter(predicate)</code> after <code>.groupBy(...)</code>
+                    <code>.filter(condition)</code> after <code>.group(...)</code>
                 </td>
             </tr>
             <tr>
@@ -76,7 +76,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>ORDER BY</code>
                 </td>
                 <td>
-                    <code>.orderBy(&#123;fields&#125;)</code>
+                    <code>.order(by := &#123;keys&#125;)</code>
                 </td>
             </tr>
             <tr>
@@ -100,7 +100,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>UNION ALL</code>
                 </td>
                 <td>
-                    <code>.unionAll(otherPipeline)</code>
+                    <code>.unionall(otherPipeline)</code>
                 </td>
             </tr>
             <tr>
@@ -109,6 +109,14 @@ import Note from '../../../components/astro/Note.astro';
                 </td>
                 <td>
                     <code>query.insertInto(table)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>CREATE TABLE</code>
+                </td>
+                <td>
+                    <code>createTable(table, &#123;column := type, ...&#125;)</code>
                 </td>
             </tr>
         </tbody>
@@ -120,7 +128,7 @@ import Note from '../../../components/astro/Note.astro';
 ```sql
 -- SQL
 SELECT country, COUNT(*) AS count
-FROM default
+FROM data
 WHERE date >= DATE '2024-01-01'
 GROUP BY country
 ORDER BY count DESC
@@ -129,10 +137,10 @@ LIMIT 10;
 
 ```saneql
 -- RhyDB query language
-default
+data
   .filter(date >= '2024-01-01'::date)
-  .groupBy({count := count()}, {country})
-  .orderBy({count.desc()})
+  .group(by := {country}, aggs := {count := count()})
+  .order(by := {count.desc()})
   .limit(10)
 ```
 
@@ -142,11 +150,11 @@ default
 - Records and sets use braces, and `:=` assigns a name inside a record.
 - The available tables and columns are configured per RhyDB instance.
 - Sequence predicates and aggregations understand reference coordinates, mutations, and ambiguity.
-- RhyDB currently provides `count()` as its aggregate function; it is not a general SQL engine.
+- RhyDB currently provides `count()` and `sum()` as its aggregate functions; it is not a general SQL engine.
 - Missing values are tested with `column.isNull()` and `column.isNotNull()`; `column = null` is an error rather than the always-unknown comparison SQL allows.
 - `!` is a set complement rather than SQL's `NOT`. Comparisons never match null cells, so `country <> 'Germany'` drops the rows whose country is null while `!(country = 'Germany')` keeps them.
 
 <Note title='Reading a query'>
     Read a RhyDB query from top to bottom as a series of intermediate tables. Operations such as `map`, `project`, and
-    `groupBy` change the schema.
+    `group` change the schema.
 </Note>

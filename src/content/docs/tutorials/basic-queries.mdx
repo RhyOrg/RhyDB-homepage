@@ -25,16 +25,16 @@ We will use a small dataset consisting a single table with 1,000 SARS-CoV-2 sequ
     <IslandFallback slot='fallback' label='Loading RhyDB…' />
 </TutorialDataLoader>
 
-The dataset has a single table called "default". Let's inspect it:
+The dataset has a single table called "data". Let's inspect it:
 
 <TutorialTask>
     Load the whole table by running the following query:
-    <TutorialQuery query='default' />
+    <TutorialQuery query='data' />
 </TutorialTask>
 
 <TutorialTask>
     See the schema of the table:
-    <TutorialQuery query='default.schema()' />
+    <TutorialQuery query='data.schema()' />
 </TutorialTask>
 
 <TutorialConsole editorHeight={50} resultsPageSize={10} client:only='react'>
@@ -51,19 +51,19 @@ To get familiar with the basic operators of RhyDB, we will first run a few queri
 
 <TutorialTask>
     Use `project()` to define the columns that should be returned. The operator accepts a set of field names.
-    <TutorialQuery query='default.project({ strain, country, pango_lineage })' />
+    <TutorialQuery query='data.project({ strain, country, pango_lineage })' />
 </TutorialTask>
 
 <TutorialTask>
     Use `filter()` to filter the rows — here, all sequences from Switzerland with a coverage of at least 95%:
-    <TutorialQuery query="default.filter(country = 'Switzerland' && coverage >= 0.95)" />
+    <TutorialQuery query="data.filter(country = 'Switzerland' && coverage >= 0.95)" />
 </TutorialTask>
 
 <TutorialTask>
-    Use `orderBy()` to sort the data and `limit()` to restrict the number of returned rows. `orderBy()` accepts a set of
-    fields, as it is possible to sort by several of them. Fields are sorted ascending by default; add `.desc()` to a
-    field name for a descending order. This returns the 20 most recent entries:
-    <TutorialQuery query='default.orderBy({ date.desc() }).limit(20)' />
+    Use `order()` to sort the data and `limit()` to restrict the number of returned rows. The `by` argument of `order()`
+    is a set of fields, as it is possible to sort by several of them. Fields are sorted ascending by default; add
+    `.desc()` to a field name for a descending order. This returns the 20 most recent entries:
+    <TutorialQuery query='data.order(by := { date.desc() }).limit(20)' />
 </TutorialTask>
 
 <TutorialTask>
@@ -79,21 +79,21 @@ To get familiar with the basic operators of RhyDB, we will first run a few queri
 
 ## Grouping and aggregations
 
-Instead of returning individual sequences, `groupBy()` aggregates them. Its first argument is a record of aggregates, currently only `count()`, and its optional second argument is the set of fields to group by.
+Instead of returning individual sequences, `group()` aggregates them. Its first argument, `by`, is the set of fields to group by, and its second argument, `aggs`, is a record of aggregates: `count()` counts the rows of each group, and `sum()` adds up a numeric field.
 
 <TutorialTask>
-    Without grouping fields, the whole table is aggregated into a single row.
-    <TutorialQuery query='default.groupBy({ count := count() })' />
+    With the empty set `{}` as grouping fields, the whole table is aggregated into a single row.
+    <TutorialQuery query='data.group(by := {}, aggs := { count := count() })' />
 </TutorialTask>
 
 <TutorialTask>
     Add a set of grouping fields to get one row per value.
-    <TutorialQuery query='default.groupBy({ count := count() }, { region })' />
+    <TutorialQuery query='data.group(by := { region }, aggs := { count := count() })' />
 </TutorialTask>
 
 <TutorialTask>
     Group by several fields and sort the result to get the five most frequent combinations of country and lineage.
-    <TutorialQuery query='default.groupBy({ count := count() }, { country, pango_lineage }).orderBy({ count.desc() }).limit(5)' />
+    <TutorialQuery query='data.group(by := { country, pango_lineage }, aggs := { count := count() }).order(by := { count.desc() }).limit(5)' />
 </TutorialTask>
 
 <TutorialTask>
@@ -112,26 +112,26 @@ Instead of returning individual sequences, `groupBy()` aggregates them. Its firs
 
 <TutorialTask>
     Count the sequences carrying the S:D614G substitution — nearly the whole dataset.
-    <TutorialQuery query="default.filter(aminoAcidEquals(position := 614, symbol := 'G', sequenceName := 'S')).groupBy({ count := count() })" />
+    <TutorialQuery query="data.filter(aminoAcidEquals(position := 614, symbol := 'G', sequenceName := 'S')).group(by := {}, aggs := { count := count() })" />
 </TutorialTask>
 
 <TutorialTask>
     The same substitution can be queried on the nucleotide level, where it is A23403G. It matches a few more sequences
     than the amino acid query, because a nucleotide can be called even when the surrounding codon cannot.
-    <TutorialQuery query="default.filter(nucleotideEquals(position := 23403, symbol := 'G', sequenceName := 'main')).groupBy({ count := count() })" />
+    <TutorialQuery query="data.filter(nucleotideEquals(position := 23403, symbol := 'G', sequenceName := 'main')).group(by := {}, aggs := { count := count() })" />
 </TutorialTask>
 
 <TutorialTask>
     Position 484 of the spike protein carries different substitutions in different clades. Count every sequence that
     differs from the reference there, then count only those carrying alanine with `aminoAcidEquals(position := 484,
     symbol := 'A', sequenceName := 'S')`.
-    <TutorialQuery query="default.filter(hasAAMutation(position := 484, sequenceName := 'S')).groupBy({ count := count() })" />
+    <TutorialQuery query="data.filter(hasAAMutation(position := 484, sequenceName := 'S')).group(by := {}, aggs := { count := count() })" />
     <TutorialAnswer>532 sequences differ from the reference, 489 of them carry `A`.</TutorialAnswer>
 </TutorialTask>
 
 <TutorialTask>
     Combine mutations with `&&` and group the matches. Which clades combine both substitutions?
-    <TutorialQuery query="default.filter(aminoAcidEquals(position := 501, symbol := 'Y', sequenceName := 'S') && aminoAcidEquals(position := 484, symbol := 'K', sequenceName := 'S')).groupBy({ count := count() }, { who_clade }).orderBy({ count.desc() })" />
+    <TutorialQuery query="data.filter(aminoAcidEquals(position := 501, symbol := 'Y', sequenceName := 'S') && aminoAcidEquals(position := 484, symbol := 'K', sequenceName := 'S')).group(by := { who_clade }, aggs := { count := count() }).order(by := { count.desc() })" />
     <TutorialAnswer>Omicron, Gamma, Mu and Beta, plus a few sequences without a clade assignment.</TutorialAnswer>
 </TutorialTask>
 
@@ -139,16 +139,16 @@ Instead of returning individual sequences, `groupBy()` aggregates them. Its firs
     <IslandFallback slot='fallback' label='Loading query editor…' />
 </TutorialConsole>
 
-Rather than asking about one symbol at a time, you can also read the symbol itself: `at()` returns the symbol a sequence carries at a reference position, and `map()` turns that expression into a named column. `groupBy()` groups by existing columns only, so map the positions first and then group by them — the result is a co-occurrence table of symbol combinations and how often each occurs. Positions that could not be called appear as `X` in the genes and as `N` in `main`, and deletions appear as `-`.
+Rather than asking about one symbol at a time, you can also read the symbol itself: `at()` returns the symbol a sequence carries at a reference position, and `map()` turns that expression into a named column. `group()` groups by existing columns only, so map the positions first and then group by them — the result is a co-occurrence table of symbol combinations and how often each occurs. Positions that could not be called appear as `X` in the genes and as `N` in `main`, and deletions appear as `-`.
 
 <TutorialTask>
     Look at a single position: how many sequences carry each amino acid at position 501 of the spike protein?
-    <TutorialQuery query='default.map({ s501 := S.at(501) }).groupBy({ count := count() }, { s501 }).orderBy({ count.desc() })' />
+    <TutorialQuery query='data.map({ s501 := S.at(501) }).group(by := { s501 }, aggs := { count := count() }).order(by := { count.desc() })' />
 </TutorialTask>
 
 <TutorialTask>
     Map a second position to get a co-occurrence table. The most frequent combination is 501Y with 484A.
-    <TutorialQuery query='default.map({ s501 := S.at(501), s484 := S.at(484) }).groupBy({ count := count() }, { s501, s484 }).orderBy({ count.desc() }).limit(5)' />
+    <TutorialQuery query='data.map({ s501 := S.at(501), s484 := S.at(484) }).group(by := { s501, s484 }, aggs := { count := count() }).order(by := { count.desc() }).limit(5)' />
 </TutorialTask>
 
 <TutorialTask>

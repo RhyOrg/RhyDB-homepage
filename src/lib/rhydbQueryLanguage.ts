@@ -5,18 +5,19 @@ const FUNCTIONS = new Set([
     'filter',
     'schema',
     'tables',
-    'groupBy',
+    'group',
     'project',
     'projectout',
     'map',
-    'orderBy',
+    'order',
     'limit',
     'offset',
     'randomize',
     'join',
-    'unionAll',
+    'unionall',
     'transitiveClosure',
     'insertInto',
+    'createTable',
     'mutations',
     'aminoAcidMutations',
     'insertions',
@@ -44,11 +45,12 @@ const FUNCTIONS = new Set([
     'nucleotideMutationProfile',
     'aminoAcidMutationProfile',
     'count',
+    'sum',
     'asc',
     'desc',
 ]);
 
-const KEYWORDS = new Set(['default', 'true', 'false', 'null']);
+const KEYWORDS = new Set(['true', 'false', 'null']);
 
 const tagMap = {
     comment: t.comment,
