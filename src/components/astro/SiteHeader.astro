@@ -1,5 +1,5 @@
 ---
-import logoUrl from '../../rhydb-logo-white.png';
+import logoUrl from '../../assets/logo/rhydb-logo.svg?no-inline';
 import { withBase, withoutBase } from '../../lib/paths';
 
 interface Props {
@@ -20,8 +20,8 @@ const isActive = (path: string) =>
 <header class='site-header sticky top-0 z-40'>
     <div class='site-navbar navbar mx-auto w-full max-w-7xl px-4 lg:px-6'>
         <div class='navbar-start'>
-            <a class='site-brand flex items-center hover:no-underline' href={withBase('/')} aria-label='Home'>
-                <img class='h-8 w-auto' src={logoUrl.src} alt='' aria-hidden='true' />
+            <a class='site-brand flex items-center hover:no-underline' href={withBase('/')}>
+                <img class='h-9 w-auto' src={logoUrl} alt='RhyDB' width='379' height='141' />
             </a>
         </div>
         <nav class='site-nav navbar-center hidden lg:block' aria-label='Main navigation'>
@@ -60,10 +60,7 @@ const isActive = (path: string) =>
                         <path d='M4 7h16M4 12h16M4 17h16'></path>
                     </svg>
                 </summary>
-                <nav
-                    class='dropdown-content z-50 mt-2 w-64 border border-neutral-content/20 bg-neutral p-2 shadow'
-                    aria-label='Mobile navigation'
-                >
+                <nav class='dropdown-content z-50 mt-2 w-64 p-2 shadow' aria-label='Mobile navigation'>
                     <ul class='menu w-full'>
                         {
                             navigation.map((item) => (

@@ -1,5 +1,7 @@
 ---
-import logoBlack from '../rhydb-logo-black.png';
+import appleTouchIconUrl from '../assets/logo/apple-touch-icon.png?no-inline';
+import faviconPngUrl from '../assets/logo/favicon-32.png?no-inline';
+import faviconSvgUrl from '../assets/logo/favicon.svg?no-inline';
 import '../styles.css';
 import SiteHeader from '../components/astro/SiteHeader.astro';
 
@@ -19,9 +21,11 @@ const documentTitle = title ? `${title} | RhyDB` : DEFAULT_TITLE;
     <head>
         <meta charset='UTF-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-        <link rel='icon' type='image/png' href={logoBlack.src} />
+        <link rel='icon' type='image/svg+xml' href={faviconSvgUrl} />
+        <link rel='icon' type='image/png' sizes='32x32' href={faviconPngUrl} />
+        <link rel='apple-touch-icon' href={appleTouchIconUrl} />
         <meta name='description' content={description} />
-        <meta name='theme-color' content='#17211b' />
+        <meta name='theme-color' content='#ffffff' />
         <title>{documentTitle}</title>
     </head>
     <body>

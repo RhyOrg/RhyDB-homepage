@@ -234,22 +234,23 @@
 }
 
 .site-header {
-    border-bottom: 0;
-    background: var(--color-neutral);
-    color: var(--color-neutral-content);
+    --header-accent: #00848a;
+    --header-accent-soft: #bfe5e8;
+    border-bottom: 2px solid var(--color-base-content);
+    background: #ffffff;
+    color: var(--color-base-content);
     backdrop-filter: none;
-    box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 .site-navbar {
-    min-height: 3rem;
+    min-height: 3.5rem;
 }
 
 .site-nav a,
 .site-header .btn {
     border: 1px solid transparent;
     border-radius: 0;
-    color: color-mix(in srgb, var(--color-neutral-content) 74%, transparent);
+    color: color-mix(in srgb, var(--color-base-content) 78%, transparent);
     font-size: 0.72rem;
     font-weight: 450;
 }
@@ -262,25 +263,39 @@
     display: none;
 }
 
+.site-mobile-menu nav {
+    border: 2px solid var(--color-base-content);
+    background: #ffffff;
+}
+
+.site-mobile-menu a {
+    color: var(--color-base-content);
+}
+
 .site-mobile-menu a[aria-current='page'] {
-    background: rgb(87 214 155 / 10%);
-    color: #8bf0bd;
+    background: color-mix(in srgb, var(--header-accent-soft) 55%, transparent);
+    color: var(--color-base-content);
 }
 
 .site-nav a::before {
-    color: #57d69b;
+    color: var(--header-accent);
     content: '/';
 }
 
 .site-nav a:hover,
 .site-nav a[aria-current='page'] {
-    border-color: rgb(87 214 155 / 40%);
-    background: rgb(87 214 155 / 10%);
-    color: #8bf0bd;
+    border-color: var(--header-accent);
+    background: color-mix(in srgb, var(--header-accent-soft) 55%, transparent);
+    color: var(--color-base-content);
 }
 
 .site-header .btn {
     box-shadow: none;
+}
+
+.site-header .btn:hover {
+    border-color: var(--header-accent);
+    background: color-mix(in srgb, var(--header-accent-soft) 55%, transparent);
 }
 
 .site-content {
@@ -662,14 +677,5 @@
     .console-page {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
-    }
-
-    .site-header nav {
-        border-color: rgb(215 249 232 / 20%);
-        background: var(--color-neutral);
-    }
-
-    .site-header nav a {
-        color: var(--color-neutral-content);
     }
 }
