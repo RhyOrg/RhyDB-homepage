@@ -1,0 +1,159 @@
+---
+title: Track variants over time
+description: Weekly counts with isoWeek(), and joins and unions that put several counts side by side.
+lead: Turn sampling dates into weekly time series, and combine several aggregates into a single result.
+section: Tutorials
+order: 2
+---
+
+import TutorialConsole from '../../../components/TutorialConsole';
+import TutorialDataLoader from '../../../components/TutorialDataLoader';
+import IslandFallback from '../../../components/astro/IslandFallback.astro';
+import TutorialAnswer from '../../../components/astro/TutorialAnswer.astro';
+import TutorialQuery from '../../../components/astro/TutorialQuery.astro';
+import TutorialTask from '../../../components/astro/TutorialTask.astro';
+import { withBase } from '../../../lib/paths';
+
+In this tutorial, we will count sequences per week to follow how variants replaced each other, and use joins and unions to put several of these counts into one table. It builds on `filter()`, `group()` and `order()`, which the <a href={withBase('/docs/tutorials/basic-queries')}>basic queries tutorial</a> introduces.
+
+## Loading the data
+
+We will use a table of 1,000 SARS-CoV-2 sequences that RhyDB indexes in your browser. Click the button to load it:
+
+<TutorialDataLoader client:only='react'>
+    <IslandFallback slot='fallback' label='Loading RhyDB…' />
+</TutorialDataLoader>
+
+The table is called `data`. Each row is one sequence; `date` holds its sampling date, `country` the country it was sampled in, and `who_clade` its WHO variant label, such as `Delta` or `Omicron`.
+
+## Weekly counts
+
+The table also stores `date_year` and `date_month`, but there is no column for the week. `map()` derives one: `isoWeek()` turns a date into its [ISO 8601 week](https://en.wikipedia.org/wiki/ISO_week_date), written like `2021-W49`. Weeks are written with two digits, so ordering them as strings also orders them in time.
+
+<TutorialTask>
+    Add a `week` column, then group by it to count the sequences per week:
+    <TutorialQuery query='data.map({ week := date.isoWeek() }).group(by := { week }, aggs := { count := count() }).order(by := { week })' />
+</TutorialTask>
+
+<TutorialTask>
+    The first row has a null week: four sequences have no sampling date, and their week is null too. Filter them out
+    before mapping:
+    <TutorialQuery query='data.filter(isNotNull(date)).map({ week := date.isoWeek() }).group(by := { week }, aggs := { count := count() }).order(by := { week })' />
+</TutorialTask>
+
+<TutorialTask>
+    Add `who_clade` to the grouping fields to get one row per week and variant. Restricted to December 2021 and January
+    2022, this shows Omicron taking over from Delta:
+    <TutorialQuery
+        query={`data
+  .filter(date.between('2021-12-01'::date, '2022-01-31'::date))
+  .map({ week := date.isoWeek() })
+  .group(by := { week, who_clade }, aggs := { count := count() })
+  .order(by := { week, count.desc() })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    In which week was Omicron first sequenced more often than Delta? And on which date was the last Delta sequence in
+    the dataset sampled, and in which ISO week does it fall? (Hint: sort by `date.desc()`.)
+    <TutorialAnswer>
+        In 2021-W50, with 5 Omicron and 4 Delta sequences. The last Delta sequences were sampled on 2 January 2022,
+        which still belongs to week 2021-W52: an ISO week belongs to the year that contains its Thursday, so the first
+        days of January can fall into the last week of the previous year.
+    </TutorialAnswer>
+</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Put two counts side by side with join
+
+A weekly count of one variant says little without the total number of sequences in that week. RhyDB's `map()` cannot divide one column by another, but `join()` can put both counts next to each other in one row.
+
+`join()` combines two pipelines on a condition such as `week = w`. The two inputs must have different column names, so the second pipeline names its week column `w`. By default, a join keeps only the rows that have a match on both sides.
+
+<TutorialTask>
+    Count all sequences per month in Germany in 2021, and join the number of Delta sequences in that month. `type :=
+    left` keeps every month of the left side, also when it has no Delta sequences; their `delta` is null:
+    <TutorialQuery
+        query={`data
+  .filter(country = 'Germany' && date_year = 2021)
+  .group(by := { date_month }, aggs := { total := count() })
+  .join(
+    data
+      .filter(country = 'Germany' && date_year = 2021 && who_clade = 'Delta')
+      .map({ m := date_month })
+      .group(by := { m }, aggs := { delta := count() }),
+    date_month = m,
+    type := left
+  )
+  .project({ date_month, total, delta })
+  .order(by := { date_month })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    Without `type := left`, the join is an inner join and only keeps the weeks present on both sides. Use it to find the
+    weeks in which both Alpha and Delta were sequenced:
+    <TutorialQuery
+        query={`data
+  .filter(who_clade = 'Alpha')
+  .map({ week := date.isoWeek() })
+  .group(by := { week }, aggs := { alpha := count() })
+  .join(
+    data
+      .filter(who_clade = 'Delta')
+      .map({ w := date.isoWeek() })
+      .group(by := { w }, aggs := { delta := count() }),
+    week = w
+  )
+  .project({ week, alpha, delta })
+  .order(by := { week })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    `type := leftAnti` does the opposite: it keeps the rows of the left side that have no match and only returns the
+    left columns. Starting from the weekly counts of 2021, how many weeks had sequences but not a single Omicron
+    sequence? (Hint: a second `group()` with `by := {}` counts the rows of the joined result.)
+    <TutorialAnswer>49 weeks.</TutorialAnswer>
+</TutorialTask>
+
+<TutorialConsole editorHeight={140} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Stack results with unionall
+
+Where `join()` adds columns, `unionall()` adds rows: it appends one result to another. Both must have the same columns in the same order, with the same types.
+
+<TutorialTask>
+    Build the weekly counts for Switzerland and Germany separately, label each with a constant column, and stack them
+    into one table:
+    <TutorialQuery
+        query={`data
+  .filter(country = 'Switzerland')
+  .map({ week := date.isoWeek() })
+  .group(by := { week }, aggs := { count := count() })
+  .map({ place := 'Switzerland' })
+  .unionall(
+    data
+      .filter(country = 'Germany')
+      .map({ week := date.isoWeek() })
+      .group(by := { week }, aggs := { count := count() })
+      .map({ place := 'Germany' })
+  )
+  .order(by := { week })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    The same table is easier to get with `country` as a second grouping field. Write that query and compare the results.
+    `unionall()` is useful when the stacked parts need different filters or aggregations, such as a weekly series next
+    to a single overall total.
+</TutorialTask>
+
+<TutorialConsole editorHeight={140} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>

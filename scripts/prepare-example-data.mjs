@@ -9,7 +9,8 @@
 // Generated into public/example-data/sars-cov-2-1000/:
 //   data.ndjson.zst          the dump reduced to the tutorial columns, in RhyDB's NDJSON input shape
 //   database_config.yaml     column types, indexes and the primary key
-//   lineage_definitions.yaml pango lineage hierarchy covering every value in the dump
+//   lineage_definitions.yaml pango lineage hierarchy covering every value in the dump, resolved with
+//                            the Pango alias key, which is downloaded from a pinned commit
 //   preprocessing_config.yaml  ties the four files together
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -28,6 +29,12 @@ const PREPROCESSING_CONFIG_FILENAME = 'preprocessing_config.yaml';
 
 const PRIMARY_KEY = 'strain';
 const LINEAGE_COLUMN = 'pango_lineage';
+
+// The alias key resolves compressed Pango names such as 'BA.2' and lists the parents of recombinants.
+// It is pinned to a commit so that the generated lineage tree only changes when this line does, and
+// it is downloaded rather than committed because it is licensed CC BY-NC 4.0.
+const PANGO_ALIAS_KEY_URL =
+    'https://raw.githubusercontent.com/cov-lineages/pango-designation/9a050e2149f6c0dfb108a2a6675e550d15ccee62/pango_designation/alias_key.json';
 const DEFAULT_NUCLEOTIDE_SEQUENCE = 'main';
 
 // Nextclade contributes one column the tutorial uses; its remaining columns describe how Nextclade
@@ -102,7 +109,11 @@ await writeGenerated(
     }),
 );
 
-await writeGenerated(LINEAGE_DEFINITIONS_FILENAME, stringify(buildLineageDefinitions(lineages)));
+await writeGenerated(
+    LINEAGE_DEFINITIONS_FILENAME,
+    `# Derived from the Pango alias key (${PANGO_ALIAS_KEY_URL}), CC BY-NC 4.0\n` +
+        stringify(buildLineageDefinitions(lineages, await downloadAliasKey())),
+);
 
 await writeGenerated(
     PREPROCESSING_CONFIG_FILENAME,
@@ -210,7 +221,11 @@ function describeMetadata(records, sequenceNames) {
     return [...columns].sort().map((column) => {
         const entry = { name: column, type: types.get(column) ?? UNTYPED_COLUMNS[column] };
         if (INDEXED_COLUMNS.has(column)) entry.generateIndex = true;
-        if (column === LINEAGE_COLUMN) entry.generateLineageIndex = LINEAGE_DEFINITIONS_FILENAME;
+        if (column === LINEAGE_COLUMN) {
+            entry.generateLineageIndex = LINEAGE_DEFINITIONS_FILENAME;
+            // Both the lineage() filter on the column and a 'pango_lineage' table with the tree's edges.
+            entry.lineageIndexType = 'both';
+        }
         return entry;
     });
 }
@@ -236,25 +251,68 @@ function collectLineages(records, column) {
     return lineages;
 }
 
-// Builds the lineage hierarchy from the lineage names themselves: 'AY.4.2' descends from 'AY.4',
-// which descends from 'AY'. Intermediate levels are added even when the dump holds no record for
-// them, so that a query for a lineage including its sublineages reaches every descendant.
-function buildLineageDefinitions(lineages) {
+async function downloadAliasKey() {
+    const response = await fetch(PANGO_ALIAS_KEY_URL);
+    if (!response.ok) throw new Error(`Could not download the Pango alias key (HTTP ${response.status}).`);
+    return response.json();
+}
+
+// Builds the Pango lineage hierarchy for the observed lineages and all their ancestors. Pango names
+// are compressed: 'BA' stands for 'B.1.1.529', so 'BA.2' is 'B.1.1.529.2' and descends from
+// 'B.1.1.529'. Parents are therefore found on the uncompressed name and compressed again. A
+// recombinant root such as 'XBB' has no uncompressed form; the alias key lists its parents instead.
+// Intermediate levels are added even when the dump holds no record for them, so that a query for a
+// lineage including its sublineages reaches every descendant.
+function buildLineageDefinitions(lineages, aliasKey) {
+    // Longest expansions first, so that compression picks the most specific alias.
+    const compressions = Object.entries(aliasKey)
+        .filter(([, expansion]) => typeof expansion === 'string' && expansion !== '')
+        .sort(([, a], [, b]) => b.length - a.length);
+
+    const uncompress = (lineage) => {
+        const [alias, ...rest] = lineage.split('.');
+        const expansion = aliasKey[alias];
+        if (expansion === undefined) throw new Error(`The lineage '${lineage}' uses the unknown alias '${alias}'.`);
+        return typeof expansion === 'string' && expansion !== '' ? [expansion, ...rest].join('.') : lineage;
+    };
+    const compress = (uncompressed) => {
+        const match = compressions.find(([, expansion]) => uncompressed.startsWith(`${expansion}.`));
+        return match ? match[0] + uncompressed.slice(match[1].length) : uncompressed;
+    };
+    const parentsOf = (lineage) => {
+        const uncompressed = uncompress(lineage);
+        const lastDot = uncompressed.lastIndexOf('.');
+        if (lastDot !== -1) return [compress(uncompressed.slice(0, lastDot))];
+        // A trailing '*' in a recombinant's parents means "this lineage or one of its sublineages".
+        const recombinantParents = aliasKey[lineage];
+        return Array.isArray(recombinantParents)
+            ? [...new Set(recombinantParents.map((p) => p.replace(/\*$/, '')))]
+            : [];
+    };
+
+    for (const lineage of lineages) {
+        const canonical = compress(uncompress(lineage));
+        if (canonical !== lineage) throw new Error(`The lineage '${lineage}' should be written as '${canonical}'.`);
+    }
+
     const parents = new Map();
     const pending = [...lineages];
     while (pending.length) {
         const lineage = pending.pop();
         if (parents.has(lineage)) continue;
-        const lastDot = lineage.lastIndexOf('.');
-        const parent = lastDot === -1 ? null : lineage.slice(0, lastDot);
-        parents.set(lineage, parent);
-        if (parent) pending.push(parent);
+        parents.set(lineage, parentsOf(lineage));
+        pending.push(...parents.get(lineage));
     }
 
+    // The uncompressed name is offered as an alias, so that 'B.1.1.529.2' finds the sequences of 'BA.2'.
     return Object.fromEntries(
-        [...parents.keys()]
-            .sort()
-            .map((lineage) => [lineage, parents.get(lineage) ? { parents: [parents.get(lineage)] } : {}]),
+        [...parents.keys()].sort().map((lineage) => {
+            const definition = {};
+            if (parents.get(lineage).length) definition.parents = parents.get(lineage);
+            const uncompressed = uncompress(lineage);
+            if (uncompressed !== lineage) definition.aliases = [uncompressed];
+            return [lineage, definition];
+        }),
     );
 }
 

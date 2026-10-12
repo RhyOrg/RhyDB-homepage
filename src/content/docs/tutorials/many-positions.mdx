@@ -1,0 +1,149 @@
+---
+title: Compare many positions at once
+description: Read symbols at several positions and group by them to count the combinations that occur together.
+lead: Map several sequence positions to columns and group by all of them to see which mutations occur together.
+section: Tutorials
+order: 3
+---
+
+import TutorialConsole from '../../../components/TutorialConsole';
+import TutorialDataLoader from '../../../components/TutorialDataLoader';
+import IslandFallback from '../../../components/astro/IslandFallback.astro';
+import TutorialAnswer from '../../../components/astro/TutorialAnswer.astro';
+import TutorialQuery from '../../../components/astro/TutorialQuery.astro';
+import TutorialTask from '../../../components/astro/TutorialTask.astro';
+import { withBase } from '../../../lib/paths';
+
+A mutation query such as `aminoAcidEquals()` asks about one symbol at one position. In this tutorial, we will instead read the symbols at several positions, turn them into columns and group by all of them at once. The result lists every combination of symbols that occurs in the data and how often — a quick way to see which mutations travel together and which variants they belong to. It builds on `map()` and `group()`, which the <a href={withBase('/docs/tutorials/basic-queries')}>basic queries tutorial</a> introduces.
+
+## Loading the data
+
+We will use a table of 1,000 SARS-CoV-2 sequences that RhyDB indexes in your browser. Click the button to load it:
+
+<TutorialDataLoader client:only='react'>
+    <IslandFallback slot='fallback' label='Loading RhyDB…' />
+</TutorialDataLoader>
+
+The table is called `data`. `main` holds each genome aligned against the reference genome, and the gene columns, such as `S` for the spike protein, hold the aligned amino acid sequences. Because the sequences are aligned, a position refers to the same place in every row.
+
+## Read the symbol at a position
+
+`S[501]` returns the symbol at position 501 of the spike protein. Positions start at 1. Inside `map()`, it becomes a column like any other.
+
+<TutorialTask>
+    Count the amino acids found at position 501 of the spike protein:
+    <TutorialQuery query='data.map({ s501 := S[501] }).group(by := { s501 }, aggs := { count := count() }).order(by := { count.desc() })' />
+</TutorialTask>
+
+<TutorialTask>
+    `X` marks a position that could not be determined, and `-` a deletion. A mapped column can be filtered like any
+    other column, so this keeps only the sequences with a known symbol there:
+    <TutorialQuery query="data.map({ s501 := S[501] }).filter(s501 <> 'X').group(by := { s501 }, aggs := { count := count() })" />
+</TutorialTask>
+
+<TutorialTask>
+    The reference sequences are stored in the built-in table `reference_genomes`, with one row per gene and the sequence
+    in the column `sequence`. Look up the reference symbol at the same position:
+    <TutorialQuery query="reference_genomes.filter(name = 'S').map({ r501 := sequence[501] }).project({ r501 })" />
+</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Group by many positions
+
+Grouping by two mapped positions gives a table of the symbol pairs that occur together. Nothing limits the number of positions: grouping by six or ten positions gives the combinations of all of them, often called haplotypes.
+
+<TutorialTask>
+    Map six positions in the spike protein's receptor-binding domain and count the combinations among Omicron sequences:
+    <TutorialQuery
+        query={`data
+  .filter(who_clade = 'Omicron')
+  .map({
+    s339 := S[339], s371 := S[371], s417 := S[417],
+    s452 := S[452], s486 := S[486], s493 := S[493]
+  })
+  .group(by := { s339, s371, s417, s452, s486, s493 }, aggs := { count := count() })
+  .order(by := { count.desc() })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    Compare the most frequent rows with the reference. Map the same six positions of the `S` row in `reference_genomes`:
+    <TutorialQuery
+        query={`reference_genomes
+  .filter(name = 'S')
+  .map({
+    r339 := sequence[339], r371 := sequence[371], r417 := sequence[417],
+    r452 := sequence[452], r486 := sequence[486], r493 := sequence[493]
+  })
+  .project({ r339, r371, r417, r452, r486, r493 })`}
+    />
+    Every frequent combination differs from the reference `G S K L F Q` at 339 and 371. The top rows tell the main
+    Omicron waves apart: `L` at 371 marks BA.1, `F` at 371 with `L F R` at 452–493 marks BA.2, and `R V Q` at 452–493
+    marks BA.4 and BA.5.
+</TutorialTask>
+
+<TutorialTask>
+    Add `nextstrain_clade` to the grouping fields to see which clades each combination belongs to. Which Nextstrain
+    clades carry `R` at position 452 together with `V` at position 486?
+    <TutorialAnswer>22B (95 sequences), 22E (24) and 22A (13) — BA.5, BQ.1 and BA.4.</TutorialAnswer>
+</TutorialTask>
+
+<TutorialConsole editorHeight={160} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Unknown symbols split the groups
+
+A sequence with an `X` at any of the grouped positions forms a group of its own, even if it matches a frequent combination everywhere else. With many positions, these partial rows add up.
+
+<TutorialTask>
+    A second `group()` with `by := {}` counts the rows of the first one. This returns the number of distinct
+    combinations of the six positions among Omicron sequences:
+    <TutorialQuery
+        query={`data
+  .filter(who_clade = 'Omicron')
+  .map({
+    s339 := S[339], s371 := S[371], s417 := S[417],
+    s452 := S[452], s486 := S[486], s493 := S[493]
+  })
+  .group(by := { s339, s371, s417, s452, s486, s493 }, aggs := { count := count() })
+  .group(by := {}, aggs := { combinations := count() })`}
+    />
+</TutorialTask>
+
+<TutorialTask>
+    Filter out the sequences with an `X` at any of the six positions before grouping. How many distinct combinations
+    remain?
+    <TutorialAnswer>18 of the 51 combinations.</TutorialAnswer>
+</TutorialTask>
+
+<TutorialConsole editorHeight={160} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
+
+## Nucleotides and codons
+
+The same works on the nucleotide sequence. An amino acid is encoded by three nucleotides, a codon, so mapping three neighboring positions of `main` gives the codon behind an amino acid. In the nucleotide sequence, `N` marks an unknown symbol.
+
+<TutorialTask>
+    The codon for position 614 of the spike protein lies at positions 23402 to 23404 of the genome. Count the codons
+    found there:
+    <TutorialQuery query='data.map({ c1 := main[23402], c2 := main[23403], c3 := main[23404] }).group(by := { c1, c2, c3 }, aggs := { count := count() }).order(by := { count.desc() })' />
+</TutorialTask>
+
+<TutorialTask>
+    Nucleotide and amino acid positions can be mixed in one grouping. Group by `S[614]` and `main[23403]` together. How
+    many sequences have a known nucleotide at 23403 but an unknown amino acid at 614?
+    <TutorialAnswer>
+        9 sequences have `G` at 23403 and `X` at 614. In 8 of them, the whole codon reads `GGT`. The gene columns come
+        from a separate translation step, which marked the neighboring positions 613 and 615 as unknown too, so the two
+        levels can disagree.
+    </TutorialAnswer>
+</TutorialTask>
+
+<TutorialConsole editorHeight={80} resultsPageSize={10} client:only='react'>
+    <IslandFallback slot='fallback' label='Loading query editor…' />
+</TutorialConsole>
