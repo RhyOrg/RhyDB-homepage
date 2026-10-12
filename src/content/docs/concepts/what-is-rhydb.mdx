@@ -30,20 +30,23 @@ RhyDB is used by various other tools that the team of RhyDB is also working on:
 
 - [Loculus](https://loculus.org/) is a comprehensive and modular package for sharing and managing pathogen sequence data. It does not only store data as provided but manages the bioinformatics processing (QC, alignment, lineage calling, etc.), versioning, authentication and much more. Loculus uses internally RhyDB as its query engine: when a user searches sequences on Loculus, RhyDB performs the work.
 - [Pathoplexus](https://pathoplexus.org) is one specific instance of Loculus for facilitating global sharing of viral genomic data.
-- [LAPIS](https://github.com/GenSpectrum/LAPIS) is a web service focusing on providing a simple web API to query sequencing data. It sits on top of SILO and translates web API calls to RhyDB queries, and it transforms RhyDB's result to various data formats.
+- [LAPIS](https://github.com/GenSpectrum/LAPIS) is a web service focusing on providing a simple web API to query sequencing data. It sits on top of RhyDB and translates web API calls to RhyDB queries, and it transforms RhyDB's result to various data formats.
 - [CoV-Spectrum](https://cov-spectrum.org) and [GenSpectrum](https://genspectrum.org) are web dashboards to discover and analyze variants of various viruses; they query RhyDB heavily.
+- The [W-ASAP dashboard](https://dashboard.wasap.genspectrum.org/) shows sequencing data from WISE, a Swiss wastewater surveillance program for monitoring circulating respiratory viruses. Its data is served by RhyDB.
 
 ## A short history and use in other projects
 
 - January 2021: The origin of RhyDB goes back to when the first Variant of Concern (VOC) of SARS-CoV-2 was detected and the global community started to ramp up sequencing. Chaoran Chen, based at the [cEvo group of Tanja Stadler at ETH Zurich](https://bsse.ethz.ch/cevo), started the development of [CoV-Spectrum](https://cov-spectrum.org), a dashboard that allowed the interactive search of mutations in the growing dataset. The first version of [LAPIS](https://github.com/GenSpectrum/LAPIS) was developed as its backend.
 - July 2021: While LAPIS used PostgreSQL at the beginning to search mutations, this soon became too inefficient with the growing data. LAPIS (written in Java/Kotlin) started to implement its own columnar storage format and query engine for the alignment data. It consumed a lot of RAM but facilitated the querying of several million SARS-CoV-2 sequences.
-- June 2022: Over time, as the number of sequences continued to rise, LAPIS struggled increasingly. In collaboration with [Thomas Neumann and the Chair for Database Systems at TU Munich](https://db.in.tum.de/?lang=en), Alexander Taepper (back-then a student at TUM) wrote a master's thesis in which he developed the first research prototype of SILO.
-- May 2023: Alex joined the cEvo group to continue his work on SILO.
-- (TODO: when did we start using SILO in LAPIS/CoV-Spectrum? What are other milestones?)
+- June 2022: Over time, as the number of sequences continued to rise, LAPIS struggled increasingly. In collaboration with [Thomas Neumann and the Chair for Database Systems at TU Munich](https://db.in.tum.de/?lang=en), Alexander Taepper (back-then a student at TUM) wrote a master's thesis in which he developed the first research prototype of RhyDB.
+- May 2023: Alex joined the cEvo group to continue his work on RhyDB.
+- February 2024: RhyDB started to serve the CoV-Spectrum website in production
 - August 2024: After a year of development, [Pathoplexus](https://pathoplexus.org) and [Loculus](https://loculus.org/) were launched to facilitate sharing of pathogen sequencing data. SILO and LAPIS served as their query engine.
-- (TODO: something on the W-ASAP project)
-- August 2026: SILO received its new query language and query optimizer, allowing it to be used more flexibly and independently. With these changes, SILO was announced publicly as a standalone project and was renamed RhyDB.
+- November 2025: The Swiss wastewater database [W-ASAP](https://dashboard.wasap.genspectrum.org/) went live, together with the [Swiss wastewater dashboards on GenSpectrum](https://genspectrum.org/swiss-wastewater). Instead of waiting days for cluster-based analyses, users could now explore wastewater sequencing data on-the-fly in the browser.
+- August 2026: RhyDB received its new query language and query optimizer, allowing it to be used more flexibly and independently. With these changes, SILO was announced publicly as a standalone project and was renamed RhyDB.
 
 ## About the name
 
-(TODO)
+RhyDB is developed in Basel, Switzerland, where the cEvo group is based at ETH Zurich's Department of Biosystems Science and Engineering. The Rhine is a defining landmark in the city center, and in Basel German the river is called _Rhy_.
+
+When SILO became a standalone project with its own query language, it started using the river's shape in its logo and the local name for the project.
