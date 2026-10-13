@@ -35,9 +35,17 @@ export const wasapRsvBPublicInstance: PublicInstance = {
     server: 'https://silo.wasap.genspectrum.org/rsvb',
 };
 
+export const pathoplexusPublicInstance: PublicInstance = {
+    id: 'pathoplexus-organisms',
+    name: 'All Pathoplexus organisms',
+    hostedBy: 'GenSpectrum',
+    server: 'https://gs-staging-1.int.genspectrum.org/pathoplexus',
+};
+
 export const publicInstances: PublicInstance[] = [
     sarsCov2PublicInstance,
     wasapSarsCov2PublicInstance,
     wasapRsvAPublicInstance,
     wasapRsvBPublicInstance,
+    pathoplexusPublicInstance,
 ];
