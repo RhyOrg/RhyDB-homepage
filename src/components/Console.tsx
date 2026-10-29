@@ -11,10 +11,10 @@ import {
     normalizeServerUrl,
     type ConsoleConnectionMode,
 } from '../lib/serverUrl';
-import type { QueryRow } from '../lib/types';
 import { publicInstances, sarsCov2PublicInstance, type PublicInstance } from '../data/publicInstances';
 import { getRandomSarsCov2Query } from '../data/randomQueries';
 import { remoteQueryTarget, type QueryTarget } from '../lib/queryTarget';
+import { loadDatabaseSchema, type TableField, type TableSchema } from '../lib/databaseSchema';
 import type { LocalRhyDBClient } from '../lib/localRhyDBClient';
 import type { LocalRhyDBEvent, LocalRhyDBProgress } from '../lib/localRhyDBProtocol';
 
@@ -40,9 +40,9 @@ type LocalConnection = {
 type Connection = RemoteConnection | LocalConnection;
 
 type SchemaState =
-    | { status: 'idle' | 'loading'; rows: QueryRow[]; error: null }
-    | { status: 'ready'; rows: QueryRow[]; error: null }
-    | { status: 'error'; rows: QueryRow[]; error: string };
+    | { status: 'idle' | 'loading'; tables: TableSchema[]; error: null }
+    | { status: 'ready'; tables: TableSchema[]; error: null }
+    | { status: 'error'; tables: TableSchema[]; error: string };
 
 export default function Console() {
     const { location, navigate } = useConsoleLocation();
@@ -58,7 +58,7 @@ export default function Console() {
     const [connection, setConnection] = useState<Connection | null>(null);
     const [connecting, setConnecting] = useState(Boolean(sharedServer));
     const [connectionError, setConnectionError] = useState<string | null>(null);
-    const [schema, setSchema] = useState<SchemaState>({ status: 'idle', rows: [], error: null });
+    const [schema, setSchema] = useState<SchemaState>({ status: 'idle', tables: [], error: null });
     const [query, setQuery] = useState(initialQuery);
     const [linkCopied, setLinkCopied] = useState(false);
     const [autoRunSharedQuery, setAutoRunSharedQuery] = useState(Boolean(sharedServer && initialQuery.trim()));
@@ -87,16 +87,16 @@ export default function Console() {
 
     const loadSchema = useCallback(async (target: QueryTarget) => {
         const request = ++schemaRequest.current;
-        setSchema({ status: 'loading', rows: [], error: null });
+        setSchema({ status: 'loading', tables: [], error: null });
         try {
-            const result = await target.run('data.schema()');
+            const tables = await loadDatabaseSchema(target);
             if (request !== schemaRequest.current) return;
-            setSchema({ status: 'ready', rows: result.rows, error: null });
+            setSchema({ status: 'ready', tables, error: null });
         } catch (error) {
             if (request !== schemaRequest.current) return;
             setSchema({
                 status: 'error',
-                rows: [],
+                tables: [],
                 error: error instanceof Error ? error.message : String(error),
             });
         }
@@ -109,7 +109,7 @@ export default function Console() {
             setConnecting(true);
             setConnectionError(null);
             setLinkCopied(false);
-            setSchema({ status: 'idle', rows: [], error: null });
+            setSchema({ status: 'idle', tables: [], error: null });
             try {
                 const server = normalizeServerUrl(serverValue);
                 const publicInstance = publicInstances.find(
@@ -127,7 +127,7 @@ export default function Console() {
             } catch (error) {
                 if (request !== remoteConnectionRequest.current) return;
                 setConnection(null);
-                setSchema({ status: 'idle', rows: [], error: null });
+                setSchema({ status: 'idle', tables: [], error: null });
                 setConnectionError(error instanceof Error ? error.message : String(error));
             } finally {
                 if (request === remoteConnectionRequest.current) setConnecting(false);
@@ -147,7 +147,7 @@ export default function Console() {
         schemaRequest.current += 1;
         setConnecting(false);
         setConnection((current) => (current?.kind === 'remote' ? null : current));
-        setSchema({ status: 'idle', rows: [], error: null });
+        setSchema({ status: 'idle', tables: [], error: null });
         setConnectionError(null);
         setLinkCopied(false);
     }, [connectTo, localDataRequested, sharedServer]);
@@ -209,7 +209,7 @@ export default function Console() {
         activeLocalClient.current?.dispose();
         activeLocalClient.current = null;
         setConnection(null);
-        setSchema({ status: 'idle', rows: [], error: null });
+        setSchema({ status: 'idle', tables: [], error: null });
         setConnectionError(null);
         setLinkCopied(false);
         setExportError(null);
@@ -435,15 +435,15 @@ export default function Console() {
                                     className='flex items-center gap-2 py-3 text-sm text-base-content/60'
                                     role='status'
                                 >
-                                    <span className='loading loading-sm loading-spinner' /> Loading schema…
+                                    <span className='loading loading-sm loading-spinner' /> Loading schemas…
                                 </div>
                             )}
                             {schema.status === 'error' && (
                                 <div className='alert border-error/25 bg-error/8 text-sm text-error' role='alert'>
-                                    The data is ready, but its schema could not be loaded. {schema.error}
+                                    The data is ready, but its tables could not be listed. {schema.error}
                                 </div>
                             )}
-                            {schema.status === 'ready' && <SchemaTable rows={schema.rows} />}
+                            {schema.status === 'ready' && <SchemaTables tables={schema.tables} />}
                         </div>
                     </details>
 
@@ -590,9 +590,41 @@ function ConnectButton({ connecting }: { connecting: boolean }) {
     );
 }
 
-function SchemaTable({ rows }: { rows: QueryRow[] }) {
+function SchemaTables({ tables }: { tables: TableSchema[] }) {
+    if (tables.length === 0) return <p className='py-3 text-sm text-base-content/60'>This instance has no tables.</p>;
     return (
-        <div className='max-h-96 overflow-auto rounded-box border border-base-300'>
+        <div className='flex flex-col gap-2'>
+            {tables.map((table) => (
+                <details
+                    key={table.name}
+                    className={`rounded-box border border-base-300 ${table.builtin ? 'opacity-60' : ''}`}
+                    open={table.name === 'data'}
+                >
+                    <summary className='flex cursor-pointer items-center gap-2 px-3 py-2 text-sm'>
+                        <code className='font-semibold'>{table.name}</code>
+                        {table.builtin && <span className='badge badge-ghost badge-sm'>built-in</span>}
+                        <span className='ml-auto text-xs text-base-content/60'>
+                            {table.status === 'ready'
+                                ? `${table.fields.length} ${table.fields.length === 1 ? 'column' : 'columns'}`
+                                : 'schema unavailable'}
+                        </span>
+                    </summary>
+                    {table.status === 'ready' ? (
+                        <SchemaTable fields={table.fields} />
+                    ) : (
+                        <div className='px-3 pb-3 text-sm text-error' role='alert'>
+                            {table.error}
+                        </div>
+                    )}
+                </details>
+            ))}
+        </div>
+    );
+}
+
+function SchemaTable({ fields }: { fields: TableField[] }) {
+    return (
+        <div className='max-h-96 overflow-auto border-t border-base-300'>
             <table className='table-pin-rows table table-sm'>
                 <thead>
                     <tr>
@@ -601,13 +633,13 @@ function SchemaTable({ rows }: { rows: QueryRow[] }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {rows.map((row, index) => (
-                        <tr key={`${String(row.fieldName)}-${index}`}>
+                    {fields.map((field, index) => (
+                        <tr key={`${field.name}-${index}`}>
                             <td>
-                                <code>{String(row.fieldName)}</code>
+                                <code>{field.name}</code>
                             </td>
                             <td>
-                                <code>{String(row.type)}</code>
+                                <code>{field.type}</code>
                             </td>
                         </tr>
                     ))}
