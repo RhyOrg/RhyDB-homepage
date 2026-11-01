@@ -65,22 +65,22 @@ AB123456         | 2024-05-10 | ACGT...        | ACGT... | MFV...`,
         slug: 'lineage-counts-2021h1',
         title: 'Lineage counts in early 2021',
         question:
-            'For sequences collected between 1 January 2021 and 30 June 2021, count the sequences per pangoLineage and return the 20 most frequent lineages, most frequent first.',
+            'For sequences collected between 1 January 2021 and 30 June 2021, count the sequences per pangoLineage and return every lineage with at least 10,000 sequences, most frequent first.',
         outputExample: `pangoLineage | count
 ------------ | -----
 B.1.1.7      | 1234
 B.1.351      | 987`,
         explanation:
-            'Filter the table to dates between 1 January and 30 June 2021. Then, use group to count the sequences for each lineage, order the rows by their counts and keep the first 20.',
+            'Filter the table to dates between 1 January and 30 June 2021. Then, use group to count the sequences for each lineage, filter the grouped rows to counts of at least 10,000 and order them by their counts.',
         documentation: [
             { label: 'between', to: '/docs/reference/functions#between' },
-            { label: 'group and order', to: '/docs/reference/query-language#pipeline-operations' },
+            { label: 'filter after group', to: '/docs/reference/query-language#filter' },
         ],
         answer: `data
   .filter(date.between('2021-01-01'::date, '2021-06-30'::date))
   .group(by:={pangoLineage}, aggs:={count:=count()})
-  .order(by:={count.desc()})
-  .limit(20)`,
+  .filter(count >= 10000)
+  .order(by:={count.desc()})`,
     },
     {
         slug: 'worldwide-spain-lineage-counts',
@@ -244,21 +244,21 @@ sample-052 | France  | 2021-01-16`,
     {
         slug: 'countries-in',
         title: 'Filter with a set of values',
-        question: 'Count the sequences from Germany, France and Italy, broken down by country, most frequent first.',
-        outputExample: `country | count
-------- | -----
-Germany | 1234
-France  | 987
-Italy   | 654`,
+        question:
+            'For the sequences from Germany, France and Italy, return per country the number of sequences, the number of sequences with a collection date, and the earliest and latest collection date. Order the countries by their number of sequences, highest first.',
+        outputExample: `country | count | withDate | first      | last
+------- | ----- | -------- | ---------- | ----------
+Germany | 1234  | 1200     | 2020-01-28 | 2024-10-08
+France  | 987   | 700      | 2020-02-27 | 2024-01-04`,
         explanation:
-            'Filter the table with in to keep sequences from Germany, France and Italy. Then, use group to count the sequences for each country and order the rows by their counts.',
+            'Filter the table with in to keep sequences from Germany, France and Italy. Then, use group to compute four aggregates per country: count() counts all rows, count(date) only the rows with a date, and min(date) and max(date) find the earliest and latest date. Order the rows by their counts.',
         documentation: [
             { label: 'in', to: '/docs/reference/functions#in' },
-            { label: 'group', to: '/docs/reference/query-language#group' },
+            { label: 'group and aggregates', to: '/docs/reference/query-language#group' },
         ],
         answer: `data
   .filter(country.in({'Germany', 'France', 'Italy'}))
-  .group(by:={country}, aggs:={count:=count()})
+  .group(by:={country}, aggs:={count:=count(), withDate:=count(date), first:=min(date), last:=max(date)})
   .order(by:={count.desc()})`,
     },
     {
@@ -406,6 +406,57 @@ B.1.177      | 2661`,
   )
   .order(by:={countSwitzerland.desc()})
   .limit(20)`,
+    },
+    {
+        slug: 'swiss-counts-danish-lineages',
+        title: 'Swiss counts of common Danish lineages',
+        question:
+            'Take the Pango lineages with more than 10,000 sequences from Denmark. How many sequences from Switzerland does each of them have? Return the lineages with their Swiss sequence count, highest first.',
+        outputExample: `pangoLineage | count
+------------ | -----
+B.1.1.7      | 1234
+AY.43        | 987`,
+        explanation:
+            'Write a subquery that counts the Danish sequences per lineage, keeps the lineages above 10,000 with a filter after the group, and projects the lineage column. Pass it to in to filter the Swiss sequences to those lineages, then group them by lineage and order the rows by their counts.',
+        documentation: [
+            { label: 'in with a subquery', to: '/docs/reference/functions#in' },
+            { label: 'filter after group', to: '/docs/reference/query-language#filter' },
+        ],
+        answer: `data
+  .filter(country = 'Switzerland' && pangoLineage.in(
+    data
+      .filter(country = 'Denmark')
+      .group(by := {pangoLineage}, aggs := {count := count()})
+      .filter(count > 10000)
+      .project({pangoLineage})
+  ))
+  .group(by := {pangoLineage}, aggs := {count := count()})
+  .order(by := {count.desc()})`,
+    },
+    {
+        slug: 'ba2-sublineage-branches',
+        title: 'The largest branches below BA.2',
+        question:
+            'BA.2 has many direct sublineages. For each of them, count the sequences that belong to it or to any of its descendants. Return the 10 direct sublineages with the most sequences, highest first.',
+        outputExample: `child   | count
+------- | -----
+BA.2.86 | 1234
+BA.2.12 | 987`,
+        explanation:
+            'The lineage table pangoLineage lists every lineage with its parent. Filter it to the children of BA.2 and rename their lineage column. Join them with the transitive closure from parent to lineage, including each lineage itself, to pair every child with all its descendants. Join the descendants with the lineages of the sequences, group by child to count them, order the rows by their counts and keep the first 10.',
+        documentation: [
+            { label: 'Lineage tables', to: '/docs/reference/query-language#tables' },
+            { label: 'transitiveClosure', to: '/docs/reference/query-language#transitive-closure' },
+        ],
+        answer: `pangoLineage
+  .filter(parent = 'BA.2')
+  .map({child := lineage})
+  .project({child})
+  .join(pangoLineage.transitiveClosure(parent, lineage, includeVertices := true), child = from)
+  .join(data.map({lineageName := pangoLineage}).project({lineageName}), to = lineageName)
+  .group(by := {child}, aggs := {count := count()})
+  .order(by := {count.desc()})
+  .limit(10)`,
     },
 ];
 

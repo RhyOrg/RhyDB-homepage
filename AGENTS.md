@@ -45,8 +45,7 @@ preview port is 5001.
 - Staging schema examples used by exercises include `country`, `region`, `division`, `date`,
   `pangoLineage`, `strain`, `main`, `unaligned_main`, and amino acid columns such as `S`, `N`, and
   `E`.
-- Comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`) take a column, or a sequence position such as
-  `S[501]`, on either side and a non-null literal on the other. They never match null cells, `<>` included, while `!` is a set complement
+- Comparison operators (`=`, `<>`, `<`, `<=`, `>`, `>=`) take a column on either side and a non-null literal on the other. They never match null cells, `<>` included, while `!` is a set complement
   that does keep null rows. `column = null` is a query error; use `isNull()` / `isNotNull()`.
 
 ## Tutorial Dataset
