@@ -93,3 +93,9 @@ The multi-stage image builds the static site and serves it with nginx on port 50
 docker build -t rhydb-website .
 docker run -p 5001:5001 rhydb-website
 ```
+
+Every push publishes the image to GitHub Packages as `ghcr.io/rhyorg/rhydb-homepage`, tagged with the branch name and `commit-<sha>`, and pushes to `main` also as `latest`:
+
+```sh
+docker run -p 5001:5001 ghcr.io/rhyorg/rhydb-homepage:latest
+```
