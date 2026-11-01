@@ -1,7 +1,7 @@
 ---
 title: Function reference
 description: Scalar, lineage, sequence, insertion, and mutation-profile functions.
-lead: Functions produce scalar values or predicates. Boolean functions are used in filter expressions; value-producing functions can be assigned in map operations.
+lead: Functions compute a value for each row. Predicates are used in filter expressions, and functions that produce values can be used in map, group, and other places that take a scalar expression.
 section: Reference
 order: 5
 ---
@@ -16,14 +16,14 @@ import ReferenceItem from '../../../components/astro/ReferenceItem.astro';
         Return the character at a 1-based position. A position beyond the value returns an empty string; null remains
         null. <code>column[position]</code> is shorthand for <code>column.at(position)</code>.
     </span>
-    {`data.map({symbol := S.at(501)})
-data.map({symbol := S[501]})`}
+    {`data.map({symbol := S[501]})
+data.group(by := {S[501]}, aggs := {count := count()})`}
 </ReferenceItem>
 
-<ReferenceItem id='iso-week' name='isoWeek(column)'>
+<ReferenceItem id='iso-week' name='isoWeek(input)'>
     <div slot='description'>
         <p>
-            Return the ISO 8601 week date of a date column as a string of the form{' '}
+            Return the ISO 8601 week date of a date as a string of the form{' '}
             <code>&lt;ISO-year&gt;-W&lt;ISO-week&gt;</code>, such as <code>2026-W12</code>. The zero-padded week keeps
             the values sortable within a year. The ISO week-numbering year can differ from the calendar year around the
             turn of the year: <code>2021-01-01</code> falls into <code>2020-W53</code>.
@@ -32,20 +32,44 @@ data.map({symbol := S[501]})`}
     {`data.map({week := date.isoWeek()})`}
 </ReferenceItem>
 
+<ReferenceItem id='concat' name='concat(left, right)'>
+    <span slot='description'>
+        Join two strings into one. Both arguments must be strings, and the result is null if either of them is null.
+        Nest calls to join more than two strings.
+    </span>
+    {`data.map({place := concat(concat(country, ' / '), division)})`}
+</ReferenceItem>
+
 <ReferenceItem id='between' name='between(column, from, to)'>
-    <span slot='description'>Test an inclusive date or numeric range. Use null for an open bound.</span>
+    <span slot='description'>
+        Test an inclusive date or numeric range. Use null for an open bound. For float columns, the upper bound is
+        currently exclusive.
+    </span>
     {`date.between('2024-01-01'::date, '2024-12-31'::date)
 age.between(18, null)`}
 </ReferenceItem>
 
-<ReferenceItem id='in' name='in(column, {values})'>
-    <span slot='description'>
-        Test whether a column equals one of the values in a set. String, integer, float, date, and boolean columns are
-        supported, and every value must be a literal of the column's type. An empty set matches no rows.
-    </span>
+<ReferenceItem id='in' name='in(column, {values}) / in(column, subquery)'>
+    <div slot='description'>
+        <p>
+            Test whether a column equals one of the values in a set. String, integer, float, date, and boolean columns
+            are supported, and every value must be a literal of the column's type. An empty set matches no rows.
+        </p>
+        <p className='mt-2'>
+            Instead of a set, the values can come from a subquery that returns exactly one column of the column's type.
+            The subquery cannot refer to the row being tested. RhyDB runs it once while planning the query, and its
+            non-null values then act like a set. Subqueries are supported in <code>filter</code> and <code>map</code>.
+        </p>
+    </div>
     {`country.in({'Germany', 'France', 'Italy'})
 age.in({30, 40})
-date.in({'2021-01-01'::date, '2021-06-01'::date})`}
+date.in({'2021-01-01'::date, '2021-06-01'::date})
+data.filter(country = 'Germany' && pangoLineage.in(
+  data.filter(country = 'Switzerland')
+    .group(by := {pangoLineage}, aggs := {count := count()})
+    .filter(count > 5000)
+    .project({pangoLineage})
+))`}
 </ReferenceItem>
 
 <ReferenceItem id='null' name='isNull(column) / isNotNull(column)'>
@@ -67,8 +91,36 @@ date.in({'2021-01-01'::date, '2021-06-01'::date})`}
     id='lineage-function'
     name='lineage(column, value [, includeSublineages := bool] [, recombinantFollowingMode := string])'
 >
-    <span slot='description'>Match a value in a configured lineage index. Optionally include its descendants.</span>
-    {`pangoLineage.lineage('B.1.1.7', includeSublineages := true)`}
+    <div slot='description'>
+        <p>
+            Match a lineage of a column with a lineage definition, written as its canonical name or as one of its
+            aliases. <code>includeSublineages := true</code> also matches every lineage below it. A value that is
+            neither a lineage nor an alias of the definition matches nothing. The value cannot be <code>null</code>; use{' '}
+            <code>isNull()</code> instead.
+        </p>
+        <p className='mt-2'>
+            With <code>includeSublineages := true</code>, <code>recombinantFollowingMode</code> decides which
+            recombinant lineages count as sublineages: <code>'doNotFollow'</code> (default) follows no recombinant
+            edges, <code>'alwaysFollow'</code> includes recombinants with at least one parent in the searched clade, and{' '}
+            <code>'followIfFullyContainedInClade'</code> includes recombinants whose parents all lie in it.
+        </p>
+    </div>
+    {`pangoLineage.lineage('B.1.1.7', includeSublineages := true)
+pangoLineage.lineage('XBB', includeSublineages := true, recombinantFollowingMode := 'alwaysFollow')`}
+</ReferenceItem>
+
+<ReferenceItem
+    id='lineage-from-tables'
+    name='lineageFromTables(column, value, lineages, aliases [, includeSublineages := bool] [, recombinantFollowingMode := string])'
+>
+    <span slot='description'>
+        Work like <code>lineage()</code>, but read the lineage tree from the named tables. <code>lineages</code> needs
+        the columns <code>lineage</code> and <code>parent</code>, and <code>aliases</code> the columns{' '}
+        <code>alias</code> and <code>lineage</code>. <code>column.lineage(value)</code> is the same as{' '}
+        <code>column.lineageFromTables(value, column, column_aliases)</code> over the tables that preprocessing creates
+        for every lineage column; other tables with these columns can define a different tree.
+    </span>
+    {`pangoLineage.lineageFromTables('BA.2', pangoLineage, pangoLineage_aliases, includeSublineages := true)`}
 </ReferenceItem>
 
 <ReferenceItem id='phylo-descendant' name='phyloDescendantOf(column, node)'>
@@ -99,10 +151,12 @@ aminoAcidEquals(position := 501, symbol := 'Y', sequenceName := 'S')`}
 
 <ReferenceItem id='insertion-contains' name='insertionContains(position := n, value := regex, sequenceName := name)'>
     <span slot='description'>
-        Test whether an insertion after a reference position matches an RE2 expression.{' '}
-        <code>aminoAcidInsertionContains</code> is the amino-acid form.
+        Test whether an insertion after a reference position matches a pattern of sequence symbols and <code>.*</code>.
+        Position 0 is before the first symbol. <code>aminoAcidInsertionContains</code> is the amino-acid form, in which
+        the stop symbol <code>*</code> is written as <code>{'\\*'}</code>.
     </span>
-    {`insertionContains(position := 22204, value := 'A.*G', sequenceName := 'main')`}
+    {`insertionContains(position := 22204, value := 'A.*G', sequenceName := 'main')
+aminoAcidInsertionContains(position := 214, value := '.*EPE', sequenceName := 'S')`}
 </ReferenceItem>
 
 <ReferenceItem id='maybe-exact' name='maybe(child) / exact(child)'>

@@ -330,20 +330,19 @@ G          | 8`,
         title: 'Co-occurring S protein changes',
         question:
             'In the sequences from Switzerland, investigate the co-occurrence patterns at S protein positions 69, 70 and 501. Return one row for each combination together with the count. Order the combinations by count descending so the most common S-position pattern appears first.',
-        outputExample: `pos_69 | pos_70 | pos_501 | count
------- | ------ | ------- | -----
-H      | V      | N       | 1234
--      | -      | Y       | 987`,
+        outputExample: `S[69] | S[70] | S[501] | count
+----- | ----- | ------ | -----
+H     | V     | N      | 1234
+-     | -     | Y      | 987`,
         explanation:
-            'Filter the table to sequences from Switzerland. Use map with at to add the S symbols at positions 69, 70 and 501, then use group to count the sequences for each combination. Order the rows by their counts.',
+            'Filter the table to sequences from Switzerland. Group by the S symbols at positions 69, 70 and 501, written as S[69], S[70] and S[501], and count the sequences for each combination. Order the rows by their counts.',
         documentation: [
             { label: 'at', to: '/docs/reference/functions#at' },
-            { label: 'map and group', to: '/docs/reference/query-language#pipeline-operations' },
+            { label: 'group', to: '/docs/reference/query-language#group' },
         ],
         answer: `data
   .filter(country = 'Switzerland')
-  .map({pos_69 := S.at(69), pos_70 := S.at(70), pos_501 := S.at(501)})
-  .group(by := {pos_69, pos_70, pos_501}, aggs := {count := count()})
+  .group(by := {S[69], S[70], S[501]}, aggs := {count := count()})
   .order(by := {count.desc()})`,
     },
     {
@@ -351,13 +350,13 @@ H      | V      | N       | 1234
         title: 'Compare recent German and US submissions',
         question: `Build one harmonized table for recent SARS-CoV-2 submissions from Germany and the USA. Include the strain name, collection date, pango lineage and a place column.
 
-For Germany, place should identify the country (i.e. always just be "Germany"). For the USA, place should identify the division. Use the 100 most recent German rows and the 100 most recent US rows, then sort the combined 200-row table by date descending.`,
+For Germany, place should identify the country (i.e. always just be "Germany"). For the USA, place should identify the division. Use the 100 most recent German rows and the 100 most recent US rows, breaking ties between equal dates by strain name, then sort the combined 200-row table by date descending.`,
         outputExample: `strain        | date       | pangoLineage | place
 ------------- | ---------- | ------------ | ----------
 sample-DE-001 | 2024-05-10 | JN.1         | Germany
 sample-US-001 | 2024-05-09 | JN.1.4       | California`,
         explanation:
-            'Build a table of the 100 most recent German sequences and use map to copy the country into the place column. Build the same table for the USA with the division in the place column, then combine both tables with unionall. Order the combined rows by date descending.',
+            'Build a table of the 100 most recent German sequences, ordered by date descending and then by strain, and use map to copy the country into the place column. Build the same table for the USA with the division in the place column, then combine both tables with unionall. Order the combined rows by date descending.',
         documentation: [
             { label: 'Pipeline schemas', to: '/docs/concepts/query-language#pipeline-operators' },
             { label: 'unionall', to: '/docs/reference/query-language#unionall' },
@@ -366,14 +365,14 @@ sample-US-001 | 2024-05-09 | JN.1.4       | California`,
   .filter(country = 'Germany')
   .map({place := country})
   .project({strain, date, pangoLineage, place})
-  .order(by := {date.desc()})
+  .order(by := {date.desc(), strain})
   .limit(100)
   .unionall(
     data
       .filter(country = 'USA')
       .map({place := division})
       .project({strain, date, pangoLineage, place})
-      .order(by := {date.desc()})
+      .order(by := {date.desc(), strain})
       .limit(100)
   )
   .order(by := {date.desc()})`,

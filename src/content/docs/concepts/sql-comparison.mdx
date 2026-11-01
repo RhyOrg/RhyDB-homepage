@@ -60,7 +60,7 @@ import Note from '../../../components/astro/Note.astro';
                     <code>GROUP BY</code>
                 </td>
                 <td>
-                    <code>.group(by := &#123;columns&#125;, aggs := &#123;aggregates&#125;)</code>
+                    <code>.group(by := &#123;expressions&#125;, aggs := &#123;aggregates&#125;)</code>
                 </td>
             </tr>
             <tr>
@@ -97,6 +97,14 @@ import Note from '../../../components/astro/Note.astro';
             </tr>
             <tr>
                 <td>
+                    <code>IN (SELECT ...)</code>
+                </td>
+                <td>
+                    <code>column.in(otherPipeline)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
                     <code>UNION ALL</code>
                 </td>
                 <td>
@@ -109,6 +117,22 @@ import Note from '../../../components/astro/Note.astro';
                 </td>
                 <td>
                     <code>query.insertInto(table)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>UPDATE ... SET ... WHERE</code>
+                </td>
+                <td>
+                    <code>update(table, set := &#123;column := value&#125;, where := condition)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>DELETE FROM ... WHERE</code>
+                </td>
+                <td>
+                    <code>delete(table, where := condition)</code>
                 </td>
             </tr>
             <tr>
@@ -150,7 +174,7 @@ data
 - Records and sets use braces, and `:=` assigns a name inside a record.
 - The available tables and columns are configured per RhyDB instance.
 - Sequence predicates and aggregations understand reference coordinates, mutations, and ambiguity.
-- RhyDB currently provides `count()` and `sum()` as its aggregate functions; it is not a general SQL engine.
+- RhyDB currently provides `count()`, `count(column)`, `sum()`, `min()` and `max()` as its aggregate functions; it is not a general SQL engine.
 - Missing values are tested with `column.isNull()` and `column.isNotNull()`; `column = null` is an error rather than the always-unknown comparison SQL allows.
 - `!` is a set complement rather than SQL's `NOT`. Comparisons never match null cells, so `country <> 'Germany'` drops the rows whose country is null while `!(country = 'Germany')` keeps them.
 

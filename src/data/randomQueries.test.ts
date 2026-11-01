@@ -8,9 +8,9 @@ import {
 } from './randomQueries';
 
 describe('sarsCov2RandomQueries', () => {
-    it('contains eleven unique queries with one or two leading comments', () => {
-        expect(sarsCov2RandomQueries).toHaveLength(11);
-        expect(new Set(sarsCov2RandomQueries).size).toBe(11);
+    it('contains thirteen unique queries with one or two leading comments', () => {
+        expect(sarsCov2RandomQueries).toHaveLength(13);
+        expect(new Set(sarsCov2RandomQueries).size).toBe(13);
 
         for (const query of sarsCov2RandomQueries) {
             const lines = query.split('\n');
@@ -33,8 +33,7 @@ describe('sarsCov2RandomQueries', () => {
     it('keeps the landing page hero query unchanged once its comment is dropped', () => {
         expect(withoutLeadingComments(landingPageQuery)).toBe(`data
   .filter(region = 'Europe')
-  .map({"S[69]" := S.at(69), "S[70]" := S.at(70), "S[501]" := S.at(501)})
-  .group(by := {pangoLineage, "S[69]", "S[70]", "S[501]"}, aggs := {count := count()})
+  .group(by := {pangoLineage, S[69], S[70], S[501]}, aggs := {count := count()})
   .order(by := {count.desc()})
   .limit(10)`);
     });

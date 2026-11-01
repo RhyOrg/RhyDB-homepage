@@ -13,8 +13,7 @@ export const landingPageQuery = `-- Ranks the most common combinations of pango 
 -- positions 69, 70 and 501 among sequences from Europe.
 data
   .filter(region = 'Europe')
-  .map({"S[69]" := S.at(69), "S[70]" := S.at(70), "S[501]" := S.at(501)})
-  .group(by := {pangoLineage, "S[69]", "S[70]", "S[501]"}, aggs := {count := count()})
+  .group(by := {pangoLineage, S[69], S[70], S[501]}, aggs := {count := count()})
   .order(by := {count.desc()})
   .limit(10)`;
 
@@ -92,6 +91,30 @@ data
   .group(by := {region}, aggs := {count := count()})
   .order(by := {count.desc(), region})
   .limit(10)`,
+    `-- Shows, per country in Oceania, how many sequences have a sampling date and
+-- the range of those dates.
+data
+  .filter(region = 'Oceania')
+  .group(by := {country}, aggs := {count := count(), withDate := count(date), first := min(date), last := max(date)})
+  .order(by := {count.desc(), country})
+  .limit(15)`,
+    `-- Counts the 2024 UK sequences of the lineages that Denmark sequenced at least
+-- 100 times in 2024, using a subquery for the set of lineages.
+data
+  .filter(
+    country = 'United Kingdom'
+    && date.between('2024-01-01'::date, '2024-12-31'::date)
+    && pangoLineage.in(
+      data
+        .filter(country = 'Denmark' && date.between('2024-01-01'::date, '2024-12-31'::date))
+        .group(by := {pangoLineage}, aggs := {count := count()})
+        .filter(count >= 100)
+        .project({pangoLineage})
+    )
+  )
+  .group(by := {pangoLineage}, aggs := {count := count()})
+  .order(by := {count.desc(), pangoLineage})
+  .limit(15)`,
 ] as const;
 
 // Picks one of the example queries at random, skipping `currentQuery` so that

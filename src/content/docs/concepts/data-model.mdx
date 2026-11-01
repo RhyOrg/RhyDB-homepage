@@ -10,7 +10,7 @@ order: 3
 
 A RhyDB database consists of tables. Each table has a schema that defines its columns and their types. Every row in the table follows that schema. A table can declare one column as its primary key, whose values then identify the rows uniquely; the primary key is optional.
 
-Besides the tables that hold the records, every database contains the built-in `reference_genomes` table with the reference sequences, and preprocessing creates a lineage relation table for each lineage column that is configured to be materialized as a table. Further tables can be created with `createTable()`.
+Besides the tables that hold the records, every database contains the built-in tables `reference_genomes` with the reference sequences and `lineage_definitions` with the lineage definition files. For each lineage column, preprocessing also creates a lineage relation table with the edges of the lineage tree and an alias table with the aliases of its lineages. Further tables can be created with `createTable()`.
 
 ## Column types
 
@@ -62,7 +62,7 @@ RhyDB supports the following types for stored columns:
                     <code>date</code>
                 </td>
                 <td>
-                    Calendar dates in <code>YYYY-MM-DD</code> format.
+                    Calendar dates in <code>YYYY-MM-DD</code> format, optionally dictionary-encoded and bitmap-indexed.
                 </td>
             </tr>
             <tr>
@@ -91,7 +91,7 @@ RhyDB supports the following types for stored columns:
 
 ## Indexes
 
-A bitmap index can be enabled for a string column and supports efficient equality and set-membership filters. Each aligned nucleotide and amino-acid sequence has built-in bitmap structures that index symbols by reference position. A lineage index augments an indexed string column with a configured directed acyclic graph of lineage relationships, enabling queries that include sublineages. The same graph can also be materialized as a lineage relation table with one row per edge between a lineage and its parent, which queries can join and traverse with `transitiveClosure()`.
+A bitmap index can be enabled for a string or date column and supports efficient equality and set-membership filters. Each aligned nucleotide and amino-acid sequence has built-in bitmap structures that index symbols by reference position. A lineage definition augments an indexed string column with a directed acyclic graph of lineage relationships and aliases, enabling queries that include sublineages. Preprocessing stores the graph as a lineage relation table with one row per edge between a lineage and its parent, and the aliases as an alias table. `lineage()` reads the graph from these tables, and queries can also join and traverse them with `transitiveClosure()`.
 
 ## Example schemas
 

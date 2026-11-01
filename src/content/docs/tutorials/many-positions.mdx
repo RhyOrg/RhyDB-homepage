@@ -1,7 +1,7 @@
 ---
 title: Compare many positions at once
 description: Read symbols at several positions and group by them to count the combinations that occur together.
-lead: Map several sequence positions to columns and group by all of them to see which mutations occur together.
+lead: Group by several sequence positions at once to see which mutations occur together.
 section: Tutorials
 order: 3
 ---
@@ -14,7 +14,7 @@ import TutorialQuery from '../../../components/astro/TutorialQuery.astro';
 import TutorialTask from '../../../components/astro/TutorialTask.astro';
 import { withBase } from '../../../lib/paths';
 
-A mutation query such as `aminoAcidEquals()` asks about one symbol at one position. In this tutorial, we will instead read the symbols at several positions, turn them into columns and group by all of them at once. The result lists every combination of symbols that occurs in the data and how often — a quick way to see which mutations travel together and which variants they belong to. It builds on `map()` and `group()`, which the <a href={withBase('/docs/tutorials/basic-queries')}>basic queries tutorial</a> introduces.
+A mutation query such as `aminoAcidEquals()` asks about one symbol at one position. In this tutorial, we will instead read the symbols at several positions and group by all of them at once. The result lists every combination of symbols that occurs in the data and how often — a quick way to see which mutations travel together and which variants they belong to. It builds on `map()` and `group()`, which the <a href={withBase('/docs/tutorials/basic-queries')}>basic queries tutorial</a> introduces.
 
 ## Loading the data
 
@@ -28,17 +28,17 @@ The table is called `data`. `main` holds each genome aligned against the referen
 
 ## Read the symbol at a position
 
-`S[501]` returns the symbol at position 501 of the spike protein. Positions start at 1. Inside `map()`, it becomes a column like any other.
+`S[501]` returns the symbol at position 501 of the spike protein. Positions start at 1. It can be used like a column in `filter()`, `map()` and `group()`.
 
 <TutorialTask>
     Count the amino acids found at position 501 of the spike protein:
-    <TutorialQuery query='data.map({ s501 := S[501] }).group(by := { s501 }, aggs := { count := count() }).order(by := { count.desc() })' />
+    <TutorialQuery query='data.group(by := { S[501] }, aggs := { count := count() }).order(by := { count.desc() })' />
 </TutorialTask>
 
 <TutorialTask>
-    `X` marks a position that could not be determined, and `-` a deletion. A mapped column can be filtered like any
-    other column, so this keeps only the sequences with a known symbol there:
-    <TutorialQuery query="data.map({ s501 := S[501] }).filter(s501 <> 'X').group(by := { s501 }, aggs := { count := count() })" />
+    `X` marks a position that could not be determined, and `-` a deletion. A position can be filtered like a column, so
+    this keeps only the sequences with a known symbol there:
+    <TutorialQuery query="data.filter(S[501] <> 'X').group(by := { S[501] }, aggs := { count := count() })" />
 </TutorialTask>
 
 <TutorialTask>
@@ -53,18 +53,15 @@ The table is called `data`. `main` holds each genome aligned against the referen
 
 ## Group by many positions
 
-Grouping by two mapped positions gives a table of the symbol pairs that occur together. Nothing limits the number of positions: grouping by six or ten positions gives the combinations of all of them, often called haplotypes.
+Grouping by two positions gives a table of the symbol pairs that occur together. Nothing limits the number of positions: grouping by six or ten positions gives the combinations of all of them, often called haplotypes.
 
 <TutorialTask>
-    Map six positions in the spike protein's receptor-binding domain and count the combinations among Omicron sequences:
+    Group by six positions in the spike protein's receptor-binding domain and count the combinations among Omicron
+    sequences:
     <TutorialQuery
         query={`data
   .filter(who_clade = 'Omicron')
-  .map({
-    s339 := S[339], s371 := S[371], s417 := S[417],
-    s452 := S[452], s486 := S[486], s493 := S[493]
-  })
-  .group(by := { s339, s371, s417, s452, s486, s493 }, aggs := { count := count() })
+  .group(by := { S[339], S[371], S[417], S[452], S[486], S[493] }, aggs := { count := count() })
   .order(by := { count.desc() })`}
     />
 </TutorialTask>
@@ -105,11 +102,7 @@ A sequence with an `X` at any of the grouped positions forms a group of its own,
     <TutorialQuery
         query={`data
   .filter(who_clade = 'Omicron')
-  .map({
-    s339 := S[339], s371 := S[371], s417 := S[417],
-    s452 := S[452], s486 := S[486], s493 := S[493]
-  })
-  .group(by := { s339, s371, s417, s452, s486, s493 }, aggs := { count := count() })
+  .group(by := { S[339], S[371], S[417], S[452], S[486], S[493] }, aggs := { count := count() })
   .group(by := {}, aggs := { combinations := count() })`}
     />
 </TutorialTask>
@@ -126,12 +119,12 @@ A sequence with an `X` at any of the grouped positions forms a group of its own,
 
 ## Nucleotides and codons
 
-The same works on the nucleotide sequence. An amino acid is encoded by three nucleotides, a codon, so mapping three neighboring positions of `main` gives the codon behind an amino acid. In the nucleotide sequence, `N` marks an unknown symbol.
+The same works on the nucleotide sequence. An amino acid is encoded by three nucleotides, a codon, so grouping by three neighboring positions of `main` gives the codon behind an amino acid. In the nucleotide sequence, `N` marks an unknown symbol.
 
 <TutorialTask>
     The codon for position 614 of the spike protein lies at positions 23402 to 23404 of the genome. Count the codons
     found there:
-    <TutorialQuery query='data.map({ c1 := main[23402], c2 := main[23403], c3 := main[23404] }).group(by := { c1, c2, c3 }, aggs := { count := count() }).order(by := { count.desc() })' />
+    <TutorialQuery query='data.group(by := { main[23402], main[23403], main[23404] }, aggs := { count := count() }).order(by := { count.desc() })' />
 </TutorialTask>
 
 <TutorialTask>

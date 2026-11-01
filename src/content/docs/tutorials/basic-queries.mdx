@@ -79,7 +79,7 @@ To get familiar with the basic operators of RhyDB, we will first run a few queri
 
 ## Grouping and aggregations
 
-Instead of returning individual sequences, `group()` aggregates them. Its first argument, `by`, is the set of fields to group by, and its second argument, `aggs`, is a record of aggregates: `count()` counts the rows of each group, and `sum()` adds up a numeric field.
+Instead of returning individual sequences, `group()` aggregates them. Its first argument, `by`, is the set of fields to group by, and its second argument, `aggs`, is a record of aggregates: `count()` counts the rows of each group, `sum()` adds up a numeric field, and `min()` and `max()` find a field's smallest and largest value.
 
 <TutorialTask>
     With the empty set `{}` as grouping fields, the whole table is aggregated into a single row.
@@ -139,16 +139,16 @@ Instead of returning individual sequences, `group()` aggregates them. Its first 
     <IslandFallback slot='fallback' label='Loading query editor…' />
 </TutorialConsole>
 
-Rather than asking about one symbol at a time, you can also read the symbol itself: `at()` returns the symbol a sequence carries at a reference position, and `map()` turns that expression into a named column. `group()` groups by existing columns only, so map the positions first and then group by them — the result is a co-occurrence table of symbol combinations and how often each occurs. Positions that could not be called appear as `X` in the genes and as `N` in `main`, and deletions appear as `-`.
+Rather than asking about one symbol at a time, you can also read the symbol itself: `S[501]` returns the symbol that `S` carries at reference position 501, and `group()` groups by it like by a column. Grouping by several positions gives a co-occurrence table of symbol combinations and how often each occurs. Positions that could not be called appear as `X` in the genes and as `N` in `main`, and deletions appear as `-`.
 
 <TutorialTask>
     Look at a single position: how many sequences carry each amino acid at position 501 of the spike protein?
-    <TutorialQuery query='data.map({ s501 := S.at(501) }).group(by := { s501 }, aggs := { count := count() }).order(by := { count.desc() })' />
+    <TutorialQuery query='data.group(by := { S[501] }, aggs := { count := count() }).order(by := { count.desc() })' />
 </TutorialTask>
 
 <TutorialTask>
-    Map a second position to get a co-occurrence table. The most frequent combination is 501Y with 484A.
-    <TutorialQuery query='data.map({ s501 := S.at(501), s484 := S.at(484) }).group(by := { s501, s484 }, aggs := { count := count() }).order(by := { count.desc() }).limit(5)' />
+    Add a second position to get a co-occurrence table. The most frequent combination is 501Y with 484A.
+    <TutorialQuery query='data.group(by := { S[501], S[484] }, aggs := { count := count() }).order(by := { count.desc() }).limit(5)' />
 </TutorialTask>
 
 <TutorialTask>

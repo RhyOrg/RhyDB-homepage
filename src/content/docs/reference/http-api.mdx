@@ -42,7 +42,7 @@ curl -X POST \
 
 ## POST /admin/query
 
-Send an <a href={withBase('/docs/reference/query-language#insert-into')}>`insertInto`</a> or <a href={withBase('/docs/reference/query-language#create-table')}>`createTable`</a> write statement as a plain-text request body. RhyDB applies it to the most recent state in its data directory and saves the result as a new data version, which is served once the server has picked it up. A write that fails leaves the data version unchanged.
+Send an <a href={withBase('/docs/reference/query-language#insert-into')}>`insertInto`</a>, <a href={withBase('/docs/reference/query-language#update')}>`update`</a>, <a href={withBase('/docs/reference/query-language#delete')}>`delete`</a> or <a href={withBase('/docs/reference/query-language#create-table')}>`createTable`</a> write statement as a plain-text request body. RhyDB applies it to the most recent state in its data directory and saves the result as a new data version, which is served once the server has picked it up. A write that fails leaves the data version unchanged.
 
 ```shell
 curl -X POST \
@@ -50,17 +50,52 @@ curl -X POST \
   https://rhydb.example.org/admin/query
 ```
 
-The JSON response summarizes the write, and its `data-version` header names the version the write produced. `insertInto` reports the number of inserted rows:
+The response is a single row that summarizes the write, as NDJSON or, with `Accept: application/vnd.apache.arrow.stream`, as an Apache Arrow IPC stream. Its `data-version` header names the version the write produced, and its `result-ordering` header is `[]`.
 
-```json
-{ "insertedRows": 42 }
-```
-
-`createTable` reports the name of the created table:
-
-```json
-{ "createdTable": "archive" }
-```
+<div className='my-4 overflow-x-auto rounded-box border border-base-300'>
+    <table className='table table-sm'>
+        <thead>
+            <tr>
+                <th>Statement</th>
+                <th>Response</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <code>insertInto</code>
+                </td>
+                <td>
+                    <code>&#123;"insertedRows": 42&#125;</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>update</code>
+                </td>
+                <td>
+                    <code>&#123;"updatedRows": 2&#125;</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>delete</code>
+                </td>
+                <td>
+                    <code>&#123;"deletedRows": 2&#125;</code>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <code>createTable</code>
+                </td>
+                <td>
+                    <code>&#123;"createdTable": "archive"&#125;</code>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
 <Note title='Opt-in endpoint'>
     The endpoint is only served when the instance sets `api.allowAdminEndpoint` to `true`; otherwise it returns `404`
@@ -74,11 +109,30 @@ Return information about the loaded database, including the RhyDB version and nu
 
 ```json
 {
-    "version": "0.15.0",
+    "version": "0.17.3",
     "sequenceCount": 1000000,
     "horizontalBitmapsSize": 60000000,
     "verticalBitmapsSize": 58000000
 }
+```
+
+## GET /lineageDefinition/\{columnName\}
+
+Return the lineage definition file of a lineage column as YAML (`application/yaml`), as stored in the built-in `lineage_definitions` table. A column that does not exist or has no lineage definition returns `400`.
+
+```shell
+curl https://rhydb.example.org/lineageDefinition/pangoLineage
+```
+
+```yaml
+A:
+    aliases:
+        - a
+A.1:
+    aliases:
+        - a.1
+    parents:
+        - A
 ```
 
 ## GET /health
@@ -113,9 +167,9 @@ Return `200` with `{"status":"UP"}` when the server is ready. During startup, th
                     <code>result-ordering</code>
                 </td>
                 <td>
-                    On a successful <code>POST /query</code>, a JSON array with one entry per sort key of the result —
-                    each with <code>field</code>, <code>order</code> and <code>nullPlacement</code>. An empty array
-                    means the row order is unspecified.
+                    On a successful <code>POST /query</code> or <code>POST /admin/query</code>, a JSON array with one
+                    entry per sort key of the result — each with <code>field</code>, <code>order</code> and{' '}
+                    <code>nullPlacement</code>. An empty array means the row order is unspecified.
                 </td>
             </tr>
         </tbody>

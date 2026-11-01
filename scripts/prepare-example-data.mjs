@@ -223,8 +223,6 @@ function describeMetadata(records, sequenceNames) {
         if (INDEXED_COLUMNS.has(column)) entry.generateIndex = true;
         if (column === LINEAGE_COLUMN) {
             entry.generateLineageIndex = LINEAGE_DEFINITIONS_FILENAME;
-            // Both the lineage() filter on the column and a 'pango_lineage' table with the tree's edges.
-            entry.lineageIndexType = 'both';
         }
         return entry;
     });
@@ -238,7 +236,7 @@ function valueType(column, value) {
         return 'date';
     }
     if (typeof value === 'boolean') return 'boolean';
-    if (typeof value === 'number') return fractionalColumns.has(column) ? 'float' : 'int';
+    if (typeof value === 'number') return fractionalColumns.has(column) ? 'float' : 'int32';
     if (typeof value === 'string') return 'string';
     throw new Error(`Column '${column}' holds a value that no RhyDB type covers: ${JSON.stringify(value)}`);
 }

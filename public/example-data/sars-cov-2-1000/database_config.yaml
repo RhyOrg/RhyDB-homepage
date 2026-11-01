@@ -5,7 +5,7 @@ schema:
     - name: ace2_binding
       type: float
     - name: age
-      type: int
+      type: int32
     - name: authors
       type: string
     - name: country
@@ -22,33 +22,33 @@ schema:
     - name: date
       type: date
     - name: date_day
-      type: int
+      type: int32
     - name: date_month
-      type: int
+      type: int32
     - name: date_original_value
       type: string
     - name: date_submitted
       type: date
     - name: date_submitted_day
-      type: int
+      type: int32
     - name: date_submitted_month
-      type: int
+      type: int32
     - name: date_submitted_original_value
       type: string
     - name: date_submitted_year
-      type: int
+      type: int32
     - name: date_updated
       type: date
     - name: date_updated_day
-      type: int
+      type: int32
     - name: date_updated_month
-      type: int
+      type: int32
     - name: date_updated_original_value
       type: string
     - name: date_updated_year
-      type: int
+      type: int32
     - name: date_year
-      type: int
+      type: int32
     - name: died
       type: boolean
     - name: division
@@ -77,7 +77,6 @@ schema:
       type: string
       generateIndex: true
       generateLineageIndex: lineage_definitions.yaml
-      lineageIndexType: both
     - name: region
       type: string
       generateIndex: true

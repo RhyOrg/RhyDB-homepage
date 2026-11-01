@@ -17,6 +17,8 @@ const FUNCTIONS = new Set([
     'unionall',
     'transitiveClosure',
     'insertInto',
+    'update',
+    'delete',
     'createTable',
     'mutations',
     'aminoAcidMutations',
@@ -27,11 +29,13 @@ const FUNCTIONS = new Set([
     'between',
     'at',
     'isoWeek',
+    'concat',
     'in',
     'isNull',
     'isNotNull',
     'like',
     'lineage',
+    'lineageFromTables',
     'phyloDescendantOf',
     'nucleotideEquals',
     'aminoAcidEquals',
@@ -46,6 +50,8 @@ const FUNCTIONS = new Set([
     'aminoAcidMutationProfile',
     'count',
     'sum',
+    'min',
+    'max',
     'asc',
     'desc',
 ]);
@@ -82,6 +88,13 @@ const parser = StreamLanguage.define({
                 escaped = ch === '\\' && !escaped;
             }
             return 'string';
+        }
+
+        if (stream.peek() === '"') {
+            stream.next();
+            if (stream.skipTo('"')) stream.next();
+            else stream.skipToEnd();
+            return 'variableName';
         }
 
         if (stream.match(/^\d+(\.\d+)?/)) return 'number';

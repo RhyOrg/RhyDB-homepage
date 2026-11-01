@@ -25,7 +25,9 @@ Method syntax is equivalent to passing the value on the left as the first functi
 The table holding the sequences and their metadata is named `data`. Further tables are queried like any other table:
 
 - `reference_genomes` is a built-in table that every database contains. It holds the reference sequences, one row per sequence, with the string columns `name`, `type` (`nucleotide` or `amino_acid`) and `sequence`.
-- A lineage column configured with `lineageIndexType: table` or `both` gets a lineage relation table named after the column. It holds one row per direct edge of the lineage tree, with the child in `lineage` and its direct parent in `parent` (null for roots), as well as `id`, `is_recombinant_edge` and `recombinant_clade_ancestor`.
+- `lineage_definitions` is a built-in table with one row per lineage column. Its string columns are `column_name` and `definition`, which holds the column's lineage definition file verbatim.
+- Every lineage column gets a lineage relation table named after the column. It holds one row per direct edge of the lineage tree, with the child in `lineage` and its direct parent in `parent` (null for roots), as well as `id`, `is_recombinant_edge` and `recombinant_clade_ancestor`. Only canonical lineage names appear in it.
+- Every lineage column also gets an alias table named after the column with the suffix `_aliases`, such as `pangoLineage_aliases`. It holds one row per alias, with the alias in `alias` and the canonical lineage it stands for in `lineage`.
 
 [`tables()`](#tables-function) lists the tables of an instance.
 
@@ -146,7 +148,7 @@ A comparison takes a column identifier on one side and a literal on the other. T
                     <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>
                 </td>
                 <td>ordering</td>
-                <td>int, float, date, and string (lexicographic)</td>
+                <td>int32, int64, float, date, and string (lexicographic)</td>
             </tr>
         </tbody>
     </table>
@@ -155,6 +157,7 @@ A comparison takes a column identifier on one side and a literal on the other. T
 ```saneql
 country = 'Germany' && age >= 18
 !(date < '2024-01-01'::date)
+main[23403] = 'G'
 ```
 
 A boolean column can serve as a predicate on its own. `data.filter(isHuman)` means `isHuman = true`, and `data.filter(!isHuman)` is its complement. Only boolean columns may be written this way; a bare reference to a column of another type is rejected.
@@ -192,10 +195,11 @@ data.group(by := {country}, aggs := {count := count()}).filter(count > 1000)`}
 <ReferenceItem id='group' name='group(by, aggs)'>
     <div slot='description'>
         <p>
-            Aggregate rows. <code>by</code> is the set of grouping columns, and the empty set <code>&#123;&#125;</code>{' '}
-            aggregates all rows into a single group. <code>aggs</code> is a record of named aggregates. The result has
-            one row per group with the grouping columns and the aggregates. Rows with a null grouping value form their
-            own group.
+            Aggregate rows. <code>by</code> is the set of grouping expressions, and the empty set{' '}
+            <code>&#123;&#125;</code> aggregates all rows into a single group. <code>aggs</code> is a record of named
+            aggregates. The result has one row per group with the grouping columns and the aggregates; a grouping
+            expression other than a column is named after itself, and later operations refer to it with a double-quoted
+            identifier, such as <code>"S[501]"</code>. Rows with a null grouping value form their own group.
         </p>
         <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
             <table className='table table-sm'>
@@ -214,11 +218,26 @@ data.group(by := {country}, aggs := {count := count()}).filter(count > 1000)`}
                     </tr>
                     <tr>
                         <td>
+                            <code>count(column)</code>
+                        </td>
+                        <td>The number of rows in the group whose value in the column is not null, as an int64.</td>
+                    </tr>
+                    <tr>
+                        <td>
                             <code>sum(column)</code>
                         </td>
                         <td>
                             The sum of a numeric column. Integer columns sum to an int64 and float columns to a float.
                             Null values are skipped; a group without any non-null value sums to null.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <code>min(column)</code> / <code>max(column)</code>
+                        </td>
+                        <td>
+                            The smallest or largest value of a numeric, date, string, or boolean column, with the type
+                            of the column. Null values are skipped; a group without any non-null value is null.
                         </td>
                     </tr>
                 </tbody>
@@ -227,7 +246,10 @@ data.group(by := {country}, aggs := {count := count()}).filter(count > 1000)`}
     </div>
     {`data.group(by := {}, aggs := {count := count()})
 data.group(by := {country, pangoLineage}, aggs := {count := count()})
-data.group(by := {country}, aggs := {count := count(), totalAge := sum(age)})`}
+data.group(by := {country}, aggs := {count := count(), totalAge := sum(age)})
+data.group(by := {country}, aggs := {withDate := count(date), first := min(date), last := max(date)})
+data.group(by := {S[501], date.isoWeek()}, aggs := {count := count()})
+  .order(by := {"isoWeek(date)", "S[501]"})`}
 </ReferenceItem>
 
 <ReferenceItem id='project' name='project(expressions)'>
@@ -245,8 +267,7 @@ data.group(by := {country}, aggs := {count := count(), totalAge := sum(age)})`}
 
 <ReferenceItem id='map' name='map(expressions)'>
     <span slot='description'>
-        Add or replace columns using name-and-value assignments. Values may be literals, columns, or non-boolean scalar
-        functions.
+        Add or replace columns using name-and-value assignments. Values may be literals, columns, or scalar functions.
     </span>
     {`data.map({cohort := 'A', copiedCountry := country, week := date.isoWeek()})`}
 </ReferenceItem>
@@ -374,7 +395,10 @@ data.group(by := {country}, aggs := {count := count(), totalAge := sum(age)})`}
 <ReferenceItem id='schema' name='schema()'>
     <span slot='description'>
         Describe the schema of a table or of any pipeline result without reading its rows. Returns{' '}
-        <code>fieldName</code> and <code>type</code>.
+        <code>fieldName</code> and <code>type</code>, such as <code>STRING</code>, <code>INT32</code>,{' '}
+        <code>INT64</code>, <code>FLOAT</code>, <code>BOOL</code>, <code>DATE32</code>, or{' '}
+        <code>DICTIONARY_ENCODED(STRING)</code> for an indexed column. Sequence columns are reported as{' '}
+        <code>STRING</code>.
     </span>
     {`data.schema()
 data.group(by := {country}, aggs := {count := count()}).schema()`}
@@ -391,8 +415,8 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
 ## Sequence aggregations
 
 <Note>
-    These operations aggregate changes across the input rows. A preceding `filter` chooses the records to analyze; it
-    does not restrict which changes the aggregation returns.
+    These operations aggregate changes across the input rows. They apply to a table or to filters of a table. A
+    preceding `filter` chooses the records to analyze; it does not restrict which changes the aggregation returns.
 </Note>
 
 <ReferenceItem id='mutations' name='mutations(minProportion := p [, sequenceNames := {...}] [, fields := {...}])'>
@@ -435,8 +459,8 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
             type string and written as column names, and return a <code>from</code> and <code>to</code> row for every
             pair connected by one or more edges. Rows with a null vertex are ignored.{' '}
             <code>includeVertices := true</code> adds the pair <code>(v, v)</code> for every vertex.{' '}
-            <code>startingFrom</code>, a set of string literals, restricts the result to paths that start at the given
-            vertices. The row order is unspecified.
+            <code>startingFrom</code>, a set of constant strings that do not refer to columns, restricts the result to
+            paths that start at the given vertices. The row order is unspecified.
         </p>
         <p className='mt-2'>
             On a lineage relation table, which lists each lineage with its parent, the closure from <code>parent</code>{' '}
@@ -481,10 +505,70 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
             <a href={withBase('/docs/reference/http-api#post-adminquery')}>
                 <code>POST /admin/query</code>
             </a>{' '}
-            endpoint, which saves the result as a new data version.
+            endpoint, which saves the result as a new data version. It returns a single <code>insertedRows</code> row
+            instead of table rows.
         </p>
     </div>
     {`source.filter(country = 'Switzerland').project({primaryKey, country}).insertInto(archive)`}
+</ReferenceItem>
+
+<ReferenceItem id='update' name='update(table, set [, where := condition])'>
+    <div slot='description'>
+        <p>
+            Assign new values to columns of the rows of a table, like SQL's <code>UPDATE ... SET ... WHERE ...</code>.{' '}
+            <code>set</code> is a record that maps each column to update to its new value. A value can be anything a{' '}
+            <a href='#map'>
+                <code>map</code>
+            </a>{' '}
+            assignment computes, such as a literal, another column of the row, or a scalar function, and{' '}
+            <code>null</code> clears the cells. Each column can be assigned once.
+        </p>
+        <p className='mt-2'>
+            <code>where</code> is a filter condition over the columns of the table and can only be passed by name;
+            without it, every row is updated. RhyDB selects the rows and computes all values from the table as it was
+            before the update, so <code>&#123;division := country, country := division&#125;</code> swaps two columns,
+            and a value that cannot be assigned rejects the whole statement without changing the table.
+        </p>
+        <p className='mt-2'>
+            A value must have the type of its column. Integers can also be assigned to float columns, and any string can
+            be assigned to any string column, indexed and compressed ones included. Sequence columns and
+            phylogenetic-tree columns cannot be updated.
+        </p>
+        <p className='mt-2'>
+            Like <code>insertInto</code>, <code>update</code> must be the whole query and is sent to the{' '}
+            <a href={withBase('/docs/reference/http-api#post-adminquery')}>
+                <code>POST /admin/query</code>
+            </a>{' '}
+            endpoint. It returns a single <code>updatedRows</code> row instead of table rows.
+        </p>
+    </div>
+    {`update(data, set := {division := 'Basel-Stadt'}, where := country = 'Switzerland' && division = 'Basel')
+data.update({qcPassed := false, note := null}, where := coverage < 0.5)`}
+</ReferenceItem>
+
+<ReferenceItem id='delete' name='delete(table [, where := condition])'>
+    <div slot='description'>
+        <p>
+            Remove the rows of a table, like SQL's <code>DELETE FROM ... WHERE ...</code>. <code>where</code> is a
+            filter condition over the columns of the table and can only be passed by name; without it, every row is
+            removed. RhyDB selects all rows before removing any, so a condition that cannot be evaluated rejects the
+            statement without changing the table.
+        </p>
+        <p className='mt-2'>
+            The rows are removed from every column and index of the table, sequence and phylogenetic-tree columns
+            included, and a deleted primary key can be inserted again. Some memory of the deleted rows is not released,
+            such as the dictionary entries of values that no longer occur in an indexed string column.
+        </p>
+        <p className='mt-2'>
+            Like <code>insertInto</code>, <code>delete</code> must be the whole query and is sent to the{' '}
+            <a href={withBase('/docs/reference/http-api#post-adminquery')}>
+                <code>POST /admin/query</code>
+            </a>{' '}
+            endpoint. It returns a single <code>deletedRows</code> row instead of table rows.
+        </p>
+    </div>
+    {`delete(data, where := primaryKey = 'key1')
+data.delete(where := isNull(date) || main[23403] = 'N')`}
 </ReferenceItem>
 
 <ReferenceItem id='create-table' name='createTable(table, columns [, primaryKey := column])'>
@@ -493,10 +577,10 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
             Create a new, empty table. <code>table</code> is a name made of letters, digits, <code>_</code> and{' '}
             <code>-</code> that no existing table uses, built-in tables included, and is neither{' '}
             <code>database_schema</code> nor <code>data_version</code>. <code>columns</code> is a record that maps each
-            column name to its type. A type is written as a bare name, such as <code>int</code>, or with named options,
-            such as <code>string(generateIndex := true)</code>. Column names that are not plain identifiers are written
-            as double-quoted identifiers, such as <code>"S:ORF1a"</code>. The optional <code>primaryKey</code> names a
-            string column without an index.
+            column name to its type. A type is written as a bare name, such as <code>int32</code>, or with named
+            options, such as <code>string(generateIndex := true)</code>. Column names that are not plain identifiers are
+            written as double-quoted identifiers, such as <code>"S:ORF1a"</code>. The optional <code>primaryKey</code>{' '}
+            names a string column without an index.
         </p>
         <div className='my-4 overflow-x-auto rounded-box border border-base-300'>
             <table className='table table-sm'>
@@ -519,7 +603,7 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
                     </tr>
                     <tr>
                         <td>
-                            <code>int</code> / <code>int32</code>, <code>int64</code>
+                            <code>int32</code> / <code>int</code>, <code>int64</code>
                         </td>
                         <td></td>
                         <td>32-bit or 64-bit integer</td>
@@ -542,8 +626,10 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
                         <td>
                             <code>date</code>
                         </td>
-                        <td></td>
-                        <td>Date</td>
+                        <td>
+                            <code>generateIndex := bool</code>
+                        </td>
+                        <td>Date; dictionary-encoded with a bitmap index when indexed</td>
                     </tr>
                     <tr>
                         <td>
@@ -593,8 +679,8 @@ data.group(by := {country}, aggs := {count := count()}).schema()`}
     {`createTable(covid, {
   primaryKey := string,
   country := string(generateIndex := true),
-  age := int,
-  date := date,
+  age := int32,
+  date := date(generateIndex := true),
   main := nucleotideSequence(reference := main),
   "S" := aminoAcidSequence(reference := "S"),
   unaligned_main := zstdCompressedString(
