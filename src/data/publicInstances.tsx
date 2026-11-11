@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { EXERCISE_SERVER } from '../config';
 
 export type PublicInstance = {
@@ -5,6 +6,7 @@ export type PublicInstance = {
     name: string;
     hostedBy: string;
     server: string;
+    note?: ReactNode;
 };
 
 export const sarsCov2PublicInstance: PublicInstance = {
@@ -40,6 +42,26 @@ export const pathoplexusPublicInstance: PublicInstance = {
     name: 'All Pathoplexus organisms',
     hostedBy: 'GenSpectrum',
     server: 'https://gs-staging-1.int.genspectrum.org/pathoplexus',
+    note: (
+        <>
+            This instance uses data from{' '}
+            <a className='link' href='https://pathoplexus.org' target='_blank' rel='noreferrer'>
+                Pathoplexus
+            </a>{' '}
+            including data under the{' '}
+            <a
+                className='link'
+                href='https://pathoplexus.org/about/terms-of-use/data-use-terms'
+                target='_blank'
+                rel='noreferrer'
+            >
+                Restricted-Use Term
+            </a>
+            . Such data may only be used in accordance with the Terms. The Data Use Term of a sequence is stored in the
+            columns <code>dataUseTerms</code>, <code>dataUseTermsRestrictedUntil</code> and <code>dataUseTermsUrl</code>
+            .
+        </>
+    ),
 };
 
 export const publicInstances: PublicInstance[] = [

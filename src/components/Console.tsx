@@ -414,6 +414,11 @@ export default function Console() {
                         >
                             {connection.kind === 'local' ? 'Change data' : 'Change server'}
                         </button>
+                        {connection.kind === 'remote' && connection.publicInstance?.note && (
+                            <p className='w-full border-t border-success/20 pt-2 text-sm text-base-content/75'>
+                                {connection.publicInstance.note}
+                            </p>
+                        )}
                     </section>
 
                     {exportProgress && (
