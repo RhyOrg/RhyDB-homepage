@@ -243,6 +243,9 @@ export default function Console() {
         }
     };
 
+    // RhyDB's sequence count refers to the `data` table, so hide it once the schema shows there is none.
+    const showSequenceCount = schema.status !== 'ready' || schema.tables.some((table) => table.name === 'data');
+
     const insertRandomQuery = () => {
         queryRunner.current?.setQuery(getRandomSarsCov2Query(query));
     };
@@ -384,10 +387,12 @@ export default function Console() {
                             </div>
                         </div>
                         <dl className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs'>
-                            <div className='flex items-baseline gap-1.5'>
-                                <dt className='text-base-content/50'>Sequences</dt>
-                                <dd className='font-semibold'>{connection.info.sequenceCount.toLocaleString()}</dd>
-                            </div>
+                            {showSequenceCount && (
+                                <div className='flex items-baseline gap-1.5'>
+                                    <dt className='text-base-content/50'>Sequences</dt>
+                                    <dd className='font-semibold'>{connection.info.sequenceCount.toLocaleString()}</dd>
+                                </div>
+                            )}
                             <div className='flex items-baseline gap-1.5'>
                                 <dt className='text-base-content/50'>Version</dt>
                                 <dd className='font-mono font-semibold' title={connection.info.version}>
