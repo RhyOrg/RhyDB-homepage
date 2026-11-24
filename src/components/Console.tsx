@@ -11,8 +11,8 @@ import {
     normalizeServerUrl,
     type ConsoleConnectionMode,
 } from '../lib/serverUrl';
-import { publicInstances, sarsCov2PublicInstance, type PublicInstance } from '../data/publicInstances';
-import { getRandomSarsCov2Query } from '../data/randomQueries';
+import { publicInstances, type PublicInstance } from '../data/publicInstances';
+import { getRandomQuery, randomQueriesByInstance } from '../data/randomQueries';
 import { remoteQueryTarget, type QueryTarget } from '../lib/queryTarget';
 import { loadDatabaseSchema, type TableField, type TableSchema } from '../lib/databaseSchema';
 import type { LocalRhyDBClient } from '../lib/localRhyDBClient';
@@ -246,8 +246,13 @@ export default function Console() {
     // RhyDB's sequence count refers to the `data` table, so hide it once the schema shows there is none.
     const showSequenceCount = schema.status !== 'ready' || schema.tables.some((table) => table.name === 'data');
 
+    const randomQueries =
+        connection?.kind === 'remote' && connection.publicInstance
+            ? randomQueriesByInstance[connection.publicInstance.id]
+            : undefined;
+
     const insertRandomQuery = () => {
-        queryRunner.current?.setQuery(getRandomSarsCov2Query(query));
+        if (randomQueries) queryRunner.current?.setQuery(getRandomQuery(randomQueries, query));
     };
 
     const downloadProcessedState = async () => {
@@ -466,16 +471,15 @@ export default function Console() {
                                 </p>
                             </div>
                             <div className='flex flex-wrap gap-2'>
-                                {connection.kind === 'remote' &&
-                                    connection.publicInstance?.id === sarsCov2PublicInstance.id && (
-                                        <button
-                                            className='btn btn-outline btn-sm'
-                                            type='button'
-                                            onClick={insertRandomQuery}
-                                        >
-                                            Insert random query
-                                        </button>
-                                    )}
+                                {randomQueries && (
+                                    <button
+                                        className='btn btn-outline btn-sm'
+                                        type='button'
+                                        onClick={insertRandomQuery}
+                                    >
+                                        Insert random query
+                                    </button>
+                                )}
                                 {connection.kind === 'remote' && (
                                     <div
                                         className='tooltip tooltip-bottom tooltip-end'

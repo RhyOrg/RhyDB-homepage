@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { exercises } from './exercises';
+import { sarsCov2PublicInstance, wasapSarsCov2PublicInstance } from './publicInstances';
 import {
-    getRandomSarsCov2Query,
+    getRandomQuery,
     landingPageQuery,
+    randomQueriesByInstance,
     sarsCov2RandomQueries,
+    wasapSarsCov2RandomQueries,
     withoutLeadingComments,
 } from './randomQueries';
 
-describe('sarsCov2RandomQueries', () => {
-    it('contains thirteen unique queries with one or two leading comments', () => {
-        expect(sarsCov2RandomQueries).toHaveLength(13);
-        expect(new Set(sarsCov2RandomQueries).size).toBe(13);
+describe.each([
+    { name: 'sarsCov2RandomQueries', queries: sarsCov2RandomQueries, length: 13 },
+    { name: 'wasapSarsCov2RandomQueries', queries: wasapSarsCov2RandomQueries, length: 12 },
+])('$name', ({ queries, length }) => {
+    it('contains unique queries with one or two leading comments', () => {
+        expect(queries).toHaveLength(length);
+        expect(new Set(queries).size).toBe(length);
 
-        for (const query of sarsCov2RandomQueries) {
+        for (const query of queries) {
             const lines = query.split('\n');
             const commentCount = lines.findIndex((line) => !line.startsWith('--'));
             expect(commentCount).toBeGreaterThanOrEqual(1);
@@ -20,7 +26,16 @@ describe('sarsCov2RandomQueries', () => {
             expect(lines[commentCount]).toBe('data');
         }
     });
+});
 
+describe('randomQueriesByInstance', () => {
+    it('offers the example queries for the SARS-CoV-2 and Swiss wastewater instances', () => {
+        expect(randomQueriesByInstance[sarsCov2PublicInstance.id]).toBe(sarsCov2RandomQueries);
+        expect(randomQueriesByInstance[wasapSarsCov2PublicInstance.id]).toBe(wasapSarsCov2RandomQueries);
+    });
+});
+
+describe('sarsCov2RandomQueries', () => {
     it('does not duplicate an exercise answer', () => {
         const exerciseAnswers = new Set(exercises.map((exercise) => normalizeQuery(exercise.answer)));
         for (const query of sarsCov2RandomQueries) expect(exerciseAnswers.has(normalizeQuery(query))).toBe(false);
@@ -40,7 +55,7 @@ describe('sarsCov2RandomQueries', () => {
 
     it('can avoid immediately selecting the current query again', () => {
         const current = sarsCov2RandomQueries[0];
-        expect(getRandomSarsCov2Query(current, () => 0)).toBe(sarsCov2RandomQueries[1]);
+        expect(getRandomQuery(sarsCov2RandomQueries, current, () => 0)).toBe(sarsCov2RandomQueries[1]);
     });
 });
 
