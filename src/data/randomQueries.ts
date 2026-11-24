@@ -31,7 +31,7 @@ export const sarsCov2RandomQueries = [
 data
   .filter(
     date.between('2025-01-01'::date, '2025-12-31'::date)
-    && aminoAcidEquals(position := 69, symbol := '-', sequenceName := 'S')
+    && S[69] = '-'
   )
   .group(by := {country}, aggs := {count := count()})
   .order(by := {count.desc(), country})
@@ -145,8 +145,7 @@ data
   .filter(
     locationName = 'Zürich (ZH)'
     && samplingDate >= '2026-09-01'::date
-    && (aminoAcidEquals(position := 445, symbol := 'R', sequenceName := 'S')
-      || aminoAcidEquals(position := 445, symbol := 'P', sequenceName := 'S'))
+    && (S[445] = 'R' || S[445] = 'P')
   )
   .map({s445 := S[445]})
   .group(by := {samplingDate, s445}, aggs := {reads := count()})
@@ -186,8 +185,7 @@ data
   .filter(
     locationName = 'Genève (GE)'
     && samplingDate >= '2026-10-01'::date
-    && (aminoAcidEquals(position := 445, symbol := 'R', sequenceName := 'S')
-      || aminoAcidEquals(position := 445, symbol := 'P', sequenceName := 'S'))
+    && (S[445] = 'R' || S[445] = 'P')
   )
   .group(by := {S[444], S[445], S[446]}, aggs := {reads := count()})
   .order(by := {reads.desc()})
@@ -204,8 +202,7 @@ data
 data
   .filter(
     samplingDate >= '2026-10-01'::date
-    && (aminoAcidEquals(position := 478, symbol := 'K', sequenceName := 'S')
-      || aminoAcidEquals(position := 478, symbol := '.', sequenceName := 'S'))
+    && (S[478] = 'K' || S[478] = 'T')
   )
   .map({s478 := S[478]})
   .group(by := {locationName, s478}, aggs := {reads := count()})
@@ -213,11 +210,11 @@ data
     `-- Puts the S:445R and S:445P read counts per plant since October 2026 side by
 -- side with a join.
 data
-  .filter(samplingDate >= '2026-10-01'::date && aminoAcidEquals(position := 445, symbol := 'R', sequenceName := 'S'))
+  .filter(samplingDate >= '2026-10-01'::date && S[445] = 'R')
   .group(by := {locationName}, aggs := {v445r := count()})
   .join(
     data
-      .filter(samplingDate >= '2026-10-01'::date && aminoAcidEquals(position := 445, symbol := 'P', sequenceName := 'S'))
+      .filter(samplingDate >= '2026-10-01'::date && S[445] = 'P')
       .map({location := locationName})
       .group(by := {location}, aggs := {v445p := count()}),
     locationName = location
@@ -227,7 +224,7 @@ data
     `-- Draws a reproducible sample of ten reads with S:501Y from one Lugano sample
 -- and shows the neighbouring positions 493 and 498 on the same read.
 data
-  .filter(sampleId = 'A1_05_2026_10_07' && aminoAcidEquals(position := 501, symbol := 'Y', sequenceName := 'S'))
+  .filter(sampleId = 'A1_05_2026_10_07' && S[501] = 'Y')
   .randomize(seed := 2026)
   .map({s493 := S[493], s498 := S[498], s501 := S[501]})
   .project({readId, samplingDate, locationName, s493, s498, s501})
@@ -238,9 +235,9 @@ data
   .filter(
     samplingDate >= '2026-10-01'::date
     && nOf(2, {
-      aminoAcidEquals(position := 444, symbol := 'R', sequenceName := 'S'),
-      aminoAcidEquals(position := 445, symbol := 'R', sequenceName := 'S'),
-      aminoAcidEquals(position := 446, symbol := 'S', sequenceName := 'S')
+      S[444] = 'R',
+      S[445] = 'R',
+      S[446] = 'S'
     })
   )
   .group(by := {locationName}, aggs := {reads := count()})
