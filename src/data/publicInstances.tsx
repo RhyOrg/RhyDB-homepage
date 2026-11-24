@@ -16,25 +16,11 @@ export const sarsCov2PublicInstance: PublicInstance = {
     server: EXERCISE_SERVER,
 };
 
-export const wasapSarsCov2PublicInstance: PublicInstance = {
-    id: 'wasap-sars-cov-2',
-    name: 'SARS-CoV-2 in Swiss Wastewater',
+export const wasapPublicInstance: PublicInstance = {
+    id: 'wasap',
+    name: 'Swiss Wastewater (SARS-CoV-2, RSV-A, RSV-B, Influenza A)',
     hostedBy: 'ETH Zurich',
-    server: 'https://silo.wasap.genspectrum.org/covid',
-};
-
-export const wasapRsvAPublicInstance: PublicInstance = {
-    id: 'wasap-rsv-a',
-    name: 'RSV-A in Swiss Wastewater',
-    hostedBy: 'ETH Zurich',
-    server: 'https://silo.wasap.genspectrum.org/rsva',
-};
-
-export const wasapRsvBPublicInstance: PublicInstance = {
-    id: 'wasap-rsv-b',
-    name: 'RSV-B in Swiss Wastewater',
-    hostedBy: 'ETH Zurich',
-    server: 'https://silo.wasap.genspectrum.org/rsvb',
+    server: 'https://rhydb.wasap.genspectrum.org',
 };
 
 export const pathoplexusPublicInstance: PublicInstance = {
@@ -66,8 +52,6 @@ export const pathoplexusPublicInstance: PublicInstance = {
 
 export const publicInstances: PublicInstance[] = [
     sarsCov2PublicInstance,
-    wasapSarsCov2PublicInstance,
-    wasapRsvAPublicInstance,
-    wasapRsvBPublicInstance,
+    wasapPublicInstance,
     pathoplexusPublicInstance,
 ];

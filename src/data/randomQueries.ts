@@ -1,4 +1,4 @@
-import { sarsCov2PublicInstance, wasapSarsCov2PublicInstance } from './publicInstances';
+import { sarsCov2PublicInstance, wasapPublicInstance } from './publicInstances';
 
 // Example queries offered by the Console's "Insert random query" button for the
 // public instances listed in randomQueriesByInstance.
@@ -250,7 +250,7 @@ data
 // The example queries offered for each public instance, keyed by its id.
 export const randomQueriesByInstance: Readonly<Record<string, readonly string[]>> = {
     [sarsCov2PublicInstance.id]: sarsCov2RandomQueries,
-    [wasapSarsCov2PublicInstance.id]: wasapSarsCov2RandomQueries,
+    [wasapPublicInstance.id]: wasapSarsCov2RandomQueries,
 };
 
 // Picks one of the example queries at random, skipping `currentQuery` so that

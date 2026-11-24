@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exercises } from './exercises';
-import { sarsCov2PublicInstance, wasapSarsCov2PublicInstance } from './publicInstances';
+import { sarsCov2PublicInstance, wasapPublicInstance } from './publicInstances';
 import {
     getRandomQuery,
     landingPageQuery,
@@ -31,7 +31,7 @@ describe.each([
 describe('randomQueriesByInstance', () => {
     it('offers the example queries for the SARS-CoV-2 and Swiss wastewater instances', () => {
         expect(randomQueriesByInstance[sarsCov2PublicInstance.id]).toBe(sarsCov2RandomQueries);
-        expect(randomQueriesByInstance[wasapSarsCov2PublicInstance.id]).toBe(wasapSarsCov2RandomQueries);
+        expect(randomQueriesByInstance[wasapPublicInstance.id]).toBe(wasapSarsCov2RandomQueries);
     });
 });
 
